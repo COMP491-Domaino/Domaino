@@ -1,0 +1,5 @@
+# Downloaded and generated datasets
+data/
+
+# Interrupted downloads
+*.part
