@@ -1,0 +1,43 @@
+{
+  "dataset_version": "dataset_v1",
+  "repo_root": ".",
+  "processed_root": "@/data/processed",
+  "manifest_root": "@/data/manifests",
+
+  "cath_version": "4.4.0",
+  "pfam_version": "38.2",
+  "ted_version": "v5",
+
+  "paths": {
+    "cath_chopping": "@/data/raw/cath/v4.4.0/classification/cath-domain-boundaries-seqreschopping-v4_4_0.txt",
+    "cath_domain_list": "@/data/raw/cath/v4.4.0/classification/cath-domain-list-v4_4_0.txt",
+    "cath_names": "@/data/raw/cath/v4.4.0/classification/cath-names-v4_4_0.txt",
+    "cath_domain_seqs": "@/data/raw/cath/v4.4.0/sequences/cath-domain-seqs-v4_4_0.fa",
+    "pdb_seqres": "@/data/raw/pdb/seqres/pdb_seqres.txt.gz",
+    "pfam_regions": "@/data/raw/pfam/v38.2/Pfam-A.regions.tsv.gz",
+    "pfam_clans": "@/data/raw/pfam/v38.2/Pfam-A.clans.tsv.gz",
+    "ted_chains": "@/data/raw/ted/v5/ted_214m_per_chain_segmentation.tsv.gz",
+    "ted_domains": "@/data/raw/ted/v5/ted_365m.domain_summary.cath.globularity.taxid.tsv.gz",
+    "chainsaw_splits": "@/data/raw/benchmarks/chainsaw/chainsaw_cath1363_train_test_splits.json",
+    "chainsaw_ground_truth": "@/data/raw/benchmarks/chainsaw/chainsaw_model_v3_on_cath1363_test.csv",
+    "cathe2_test_ids": "@/data/raw/benchmarks/cathe2/data.zip",
+    "cathe2_test_labels": "@/data/raw/benchmarks/cathe2/Y_Test_SF.csv"
+  },
+
+  "comment_weights": "Relative loss weight per source. CATH is experimental ground truth; Pfam regions are auxiliary boundary evidence only; TED weights are set per consensus level in sources/ted.py.",
+  "weights": {
+    "cath": 1.0,
+    "pfam": 0.3
+  },
+
+  "comment_splits": "Ratios apply to the chains left after benchmark test chains and their S35 homologues are reserved. Whole homology components move together, so realised ratios land near but not exactly on these targets.",
+  "split_ratios": [0.8, 0.1, 0.1],
+  "seed": 20260404,
+
+  "comment_benchmark_exclusion": "How much to remove from training around a benchmark test chain. one_hop drops chains sharing an S35 cluster with it (43,787 chains on CATH 4.4.0 + Chainsaw); component drops the whole transitive homology component (73,407). Both keep the leakage audit clean; one_hop matches the proposal's 'close homologues'.",
+  "benchmark_exclusion": "one_hop",
+
+  "comment_scan_limits": "null means read the whole file. Pfam-A.regions.tsv.gz is ~149M rows and TED's per-chain file ~214M, so set a limit for a quick smoke run and leave null for the real build under Slurm.",
+  "pfam_scan_limit": null,
+  "ted_scan_limit": null
+}

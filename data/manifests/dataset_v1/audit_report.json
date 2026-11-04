@@ -1,0 +1,335 @@
+{
+  "cathe2_label_coverage": {
+    "available": true,
+    "cathe2_distinct_superfamilies": 1772,
+    "cathe2_test_domains": 6712,
+    "covered_superfamilies": 1772,
+    "examples_missing": [],
+    "missing_superfamilies": 0,
+    "missing_test_domains": 0
+  },
+  "conflicts": {
+    "pfam": {
+      "compared_chains": 9063,
+      "coverage_delta": {
+        "max": 512.404,
+        "mean": 3.162,
+        "median": -0.031,
+        "min": -0.889,
+        "p25": -0.132,
+        "p75": 0.574,
+        "p95": 10.281
+      },
+      "domain_count_agreement": 0.5168,
+      "domain_count_delta": {
+        "-3": 32,
+        "-2": 161,
+        "-1": 999,
+        "0": 4684,
+        "1": 1029,
+        "2": 439,
+        "3": 1719
+      },
+      "domain_count_equal": 4684,
+      "domains_matched_at_iou_0.8": 0.4689,
+      "per_domain_best_iou": {
+        "max": 1.0,
+        "mean": 0.641,
+        "median": 0.78,
+        "min": 0.0,
+        "p25": 0.39,
+        "p75": 0.915,
+        "p95": 0.983
+      }
+    },
+    "ted": {
+      "compared_chains": 165231,
+      "coverage_delta": {
+        "max": 0.841,
+        "mean": -0.049,
+        "median": -0.049,
+        "min": -0.92,
+        "p25": -0.124,
+        "p75": -0.007,
+        "p95": 0.329
+      },
+      "domain_count_agreement": 0.8076,
+      "domain_count_delta": {
+        "-3": 238,
+        "-2": 903,
+        "-1": 4537,
+        "0": 133442,
+        "1": 20765,
+        "2": 4195,
+        "3": 1151
+      },
+      "domain_count_equal": 133442,
+      "domains_matched_at_iou_0.8": 0.6552,
+      "per_domain_best_iou": {
+        "max": 1.0,
+        "mean": 0.759,
+        "median": 0.891,
+        "min": 0.0,
+        "p25": 0.697,
+        "p75": 0.959,
+        "p95": 0.989
+      }
+    }
+  },
+  "dataset_version": "dataset_v1",
+  "label_space": {
+    "distinct": {
+      "A": 43,
+      "C": 5,
+      "H": 6630,
+      "T": 1472
+    },
+    "h_domains_per_superfamily": {
+      "max": 49516.0,
+      "mean": 90.698,
+      "median": 7.0,
+      "min": 1.0,
+      "p25": 2.0,
+      "p75": 29.0,
+      "p95": 335.0
+    },
+    "h_share_of_top_1_percent": 0.4418,
+    "h_singleton_superfamilies": 1027,
+    "h_superfamilies": 6630,
+    "h_superfamilies_under_10_domains": 3721,
+    "labelled_domains": 601328
+  },
+  "leakage": {
+    "clean": true,
+    "clusters_leaking_train_into_eval": 0,
+    "clusters_spanning_partitions": 7424,
+    "clusters_total": 37350,
+    "examples": {}
+  },
+  "pfam_scan": {
+    "distinct_families": 30007,
+    "distinct_sequences": 68028810,
+    "region_length": {
+      "max": 6343,
+      "mean": 143.3,
+      "median": 111,
+      "min": 5,
+      "p95": 360
+    },
+    "regions_per_sequence": 1.901,
+    "rows_kept_on_held_sequences": 66955,
+    "rows_scanned": 129292764,
+    "truncated": false
+  },
+  "sources": {
+    "cath": {
+      "agreement": {
+        "exact": 342146,
+        "mismatch": 12733,
+        "no_published_sequence": 133544,
+        "out_of_bounds": 216,
+        "published_is_full_chain": 100227,
+        "residues_missing_one_side": 46297,
+        "terminal_offset": 70403
+      },
+      "chain_length": {
+        "max": 4128.0,
+        "mean": 278.084,
+        "median": 236.0,
+        "min": 1.0,
+        "p25": 148.0,
+        "p75": 349.0,
+        "p95": 594.0
+      },
+      "coverage": {
+        "max": 1.027,
+        "mean": 0.917,
+        "median": 0.964,
+        "min": 0.0,
+        "p25": 0.909,
+        "p75": 0.992,
+        "p95": 1.0
+      },
+      "discontinuous_domains": 100170,
+      "discontinuous_records": 70316,
+      "distinct_sequences": 112665,
+      "domain_length": {
+        "max": 1434.0,
+        "mean": 164.807,
+        "median": 139.0,
+        "min": 1.0,
+        "p25": 100.0,
+        "p75": 210.0,
+        "p95": 343.0
+      },
+      "domains": 740266,
+      "domains_per_chain": {
+        "0": 20,
+        "1": 314855,
+        "10+": 163,
+        "2": 135491,
+        "3": 29363,
+        "4": 9271,
+        "5": 2916,
+        "6": 1101,
+        "7": 208,
+        "8": 493,
+        "9": 88
+      },
+      "duplicate_sequences": 356778,
+      "flags": {
+        "chain_sequence_unavailable": 24526,
+        "domain_sequence_mismatch": 12265,
+        "malformed_chopping": 31,
+        "no_classified_domain": 90007,
+        "schema:ambiguous_residues": 3610,
+        "schema:no_domains": 20,
+        "schema:overlapping_domains": 60,
+        "segment_out_of_bounds": 216
+      },
+      "label_depth": {
+        "H": 601328,
+        "none": 138938
+      },
+      "multidomain_records": 179094,
+      "records": 493969,
+      "segments_per_domain": {
+        "1": 640096,
+        "2": 86018,
+        "3": 11067,
+        "4": 2964,
+        "5": 119,
+        "6+": 2
+      },
+      "source": "cath",
+      "usable": 456876
+    },
+    "pfam": {
+      "agreement": {},
+      "chain_length": {
+        "max": 4128.0,
+        "mean": 299.454,
+        "median": 248.0,
+        "min": 40.0,
+        "p25": 150.0,
+        "p75": 381.0,
+        "p95": 700.0
+      },
+      "coverage": {},
+      "discontinuous_domains": 0,
+      "discontinuous_records": 0,
+      "distinct_sequences": 9063,
+      "domain_length": {
+        "max": 1114.0,
+        "mean": 125.538,
+        "median": 94.0,
+        "min": 10.0,
+        "p25": 66.0,
+        "p75": 155.0,
+        "p95": 345.0
+      },
+      "domains": 66955,
+      "domains_per_chain": {
+        "1": 4428,
+        "10+": 865,
+        "2": 1982,
+        "3": 654,
+        "4": 478,
+        "5": 178,
+        "6": 228,
+        "7": 54,
+        "8": 129,
+        "9": 67
+      },
+      "duplicate_sequences": 0,
+      "flags": {
+        "schema:ambiguous_residues": 6,
+        "schema:overlapping_domains": 277
+      },
+      "label_depth": {
+        "none": 66955
+      },
+      "multidomain_records": 4635,
+      "records": 9063,
+      "segments_per_domain": {
+        "1": 66955
+      },
+      "source": "pfam",
+      "usable": 8786
+    },
+    "ted": {
+      "agreement": {},
+      "chain_length": {
+        "max": 2368.0,
+        "mean": 223.316,
+        "median": 167.0,
+        "min": 40.0,
+        "p25": 110.0,
+        "p75": 293.0,
+        "p95": 517.0
+      },
+      "coverage": {
+        "max": 1.0,
+        "mean": 0.839,
+        "median": 0.887,
+        "min": 0.047,
+        "p25": 0.782,
+        "p75": 0.94,
+        "p95": 0.982
+      },
+      "discontinuous_domains": 36825,
+      "discontinuous_records": 31812,
+      "distinct_sequences": 12870,
+      "domain_length": {
+        "max": 683.0,
+        "mean": 123.18,
+        "median": 104.0,
+        "min": 25.0,
+        "p25": 71.0,
+        "p75": 159.0,
+        "p95": 264.0
+      },
+      "domains": 249422,
+      "domains_per_chain": {
+        "1": 102626,
+        "10+": 3,
+        "2": 46381,
+        "3": 12930,
+        "4": 1978,
+        "5": 720,
+        "6": 479,
+        "7": 89,
+        "8": 22,
+        "9": 3
+      },
+      "duplicate_sequences": 152361,
+      "flags": {},
+      "label_depth": {
+        "H": 221096,
+        "T": 10816,
+        "none": 17510
+      },
+      "multidomain_records": 62605,
+      "records": 165231,
+      "segments_per_domain": {
+        "1": 212597,
+        "2": 33628,
+        "3": 2982,
+        "4": 187,
+        "5": 25,
+        "6+": 3
+      },
+      "source": "ted",
+      "usable": 165231
+    }
+  },
+  "splits": {
+    "benchmark_chainsaw": 2333,
+    "excluded_homologous": 40192,
+    "excluded_no_cluster": 85697,
+    "excluded_unusable": 37008,
+    "test": 32874,
+    "train": 262991,
+    "validation": 32874
+  }
+}

@@ -1,5 +1,20 @@
-# Downloaded and generated datasets
-data/
+# Downloaded raw releases and generated record files: large, reproducible from
+# scripts/download_raw_datasets.sh plus configs/.
+data/raw/
+data/processed/
+
+# Dataset manifests are deliberately NOT ignored. The split id lists, audit
+# report, data card, checksums and lock file are small and must be under
+# version control for an experiment to be reconstructable, which section 3.2
+# of the proposal commits us to.
 
 # Interrupted downloads
 *.part
+
+# Slurm job output
+logs/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/

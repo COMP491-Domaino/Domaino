@@ -1,0 +1,4 @@
+source	version	upstream_url	role
+CATH	4.4.0	https://download.cathdb.info/cath/releases/all-releases/v4_4_0/	primary ground truth
+Pfam	38.2	https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/	auxiliary region supervision
+TED	v5	https://doi.org/10.5281/zenodo.13908086	lower-confidence pretraining
