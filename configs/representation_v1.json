@@ -1,0 +1,21 @@
+{
+  "comment": "Task T2.2: frozen ESM-2 residue representations. The proposal leaves the model size to be chosen on memory, speed and validation score, so it is a plain config value here.",
+  "repo_root": ".",
+  "records": "@/data/processed/dataset_v1/chains.cath.jsonl.gz",
+  "manifest_dir": "@/data/manifests/dataset_v1",
+  "embeddings_root": "@/data/processed/dataset_v1/embeddings",
+
+  "comment_encoder": "window_size is ESM-2's 1022-residue training crop; longer chains are embedded in overlapping windows whose shared positions are averaged. torch_home points at an already-populated weight cache so compute nodes need no internet.",
+  "encoder": {
+    "model_name": "esm2_t33_650M_UR50D",
+    "layer": null,
+    "device": "auto",
+    "half": true,
+    "max_tokens_per_batch": 16384,
+    "window_size": 1022,
+    "window_overlap": 256,
+    "torch_home": "/scratch/esevinc22/new_TED/torch_cache"
+  },
+
+  "residues_per_chunk": 60000
+}

@@ -13,14 +13,18 @@ Gürsoy.
 ## Repository layout
 
 ```
-configs/            versioned dataset build configurations
+configs/            versioned build and model configurations
 data/
   raw/              downloaded source releases      (git-ignored)
-  processed/        generated record files          (git-ignored)
+  processed/        generated records and embedding caches (git-ignored)
   manifests/        checksums, splits, audit reports, data cards (tracked)
 references/         proposal and background papers
-scripts/            data download, verification and Slurm wrappers
-src/domaino/data/   work package 1: the data pipeline
+reports/            baseline and benchmark results  (tracked)
+scripts/            download, verification and Slurm wrappers
+src/domaino/
+  data/             work package 1: the data pipeline
+  model/            work package 2: representation, baselines, model
+  metrics.py        segmentation and classification measures
 tests/              unit tests
 ```
 
@@ -163,6 +167,69 @@ report says the exclusion is INACTIVE, and the training set is larger
 | TED v5 | lower-weight pretraining | per-chain choppings and predicted CATH labels from AlphaFold models | no sequences |
 | Chainsaw CATH1363 | segmentation benchmark hold-out | exact train/validation/test chain lists | pinned to an upstream commit |
 | CATHe2 | classification benchmark hold-out | test-domain identifiers | only the 36.8 GB Zenodo archive carries the identifiers |
+
+## Sequence representation and baselines (work package 2)
+
+### ESM-2 residue embeddings (T2.2)
+
+A frozen ESM-2 encoder turns a sequence into one contextual vector per
+residue, which is the only input the model is allowed. Weights are read from
+the `torch_home` cache named in `configs/representation_v1.json`, so compute
+nodes need no internet.
+
+```bash
+PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/embed_split.slurm train
+PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/embed_split.slurm validation 4000
+```
+
+Caching is optional -- a run can embed on the fly -- but the encoder is frozen,
+so a chain's vectors never change and are worth storing once. Use
+`--dry-run` to size a cache first; the training split at 650M is about 140 GB
+in fp16. The cache is a few large memory-mapped fp16 shards plus an index,
+because one file per chain would mean hundreds of thousands of tiny files,
+which this filesystem handles badly.
+
+Three details the pipeline handles, each easy to get wrong:
+
+- fair-esm returns `(batch, 2 + max_len, dim)`; residue `i` sits at index `i`
+  and the padding tail belongs to no residue. Embeddings are sliced back to
+  each sequence's own length.
+- ESM-2 was trained on 1022-residue crops but chains here reach 4,128, so
+  longer ones are embedded in **overlapping windows** whose shared positions
+  are averaged.
+- Sequences are batched by a **token budget**, not a fixed count, so a batch of
+  long chains cannot blow up memory and short chains are not padded out to the
+  longest member.
+
+A cache records which model and layer wrote it, and `EmbeddingStore.verify`
+refuses a mismatch: silently mixing 650M and 150M vectors would train a model
+on incoherent inputs.
+
+### Minimum reference baselines (T2.1)
+
+```bash
+PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/run_baselines.slurm
+```
+
+Writes `reports/baselines_v1/baseline_results.{md,json}` (deliverable D2.1).
+Three baselines, each answering a different question:
+
+| Baseline | What it establishes |
+|---|---|
+| whole chain as one domain | the floor that is genuinely hard to beat, since most CATH chains are single-domain |
+| residue-level boundary predictor | whether sequence context alone can locate a domain edge |
+| pooled-embedding CATH classifier on **ground-truth** segments | classification performance isolated from segmentation error |
+
+The third deliberately takes true segments: without that separation there is
+no way to tell later whether an end-to-end mistake came from the parse or the
+label. All three are linear models trained by plain minibatch descent, kept
+simple so they stay a floor rather than a competitor.
+
+Scores use the proposal's measures -- mean IoU, percentage correctly parsed at
+IoU ≥ 0.8, boundary-position error and domain-count error for segmentation;
+accuracy and macro F1 per CATH level for classification -- and are reported per
+chain category (single-domain, multidomain, discontinuous, long), because a
+good average hides failure on exactly the cases domain parsing is for.
 
 ## How the data is represented
 

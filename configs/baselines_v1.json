@@ -1,0 +1,34 @@
+{
+  "comment": "Task T2.1 / deliverable D2.1: minimum reference baselines. Milestone M2.1 asks for training on a small data subset, so train_limit and eval_limit are deliberately modest; raise them for a fuller picture.",
+  "repo_root": ".",
+  "records": "@/data/processed/dataset_v1/chains.cath.jsonl.gz",
+  "manifest_dir": "@/data/manifests/dataset_v1",
+  "embeddings_root": "@/data/processed/dataset_v1/embeddings",
+  "report_dir": "@/reports/baselines_v1",
+
+  "encoder": {
+    "model_name": "esm2_t33_650M_UR50D",
+    "layer": null,
+    "device": "auto",
+    "half": true,
+    "max_tokens_per_batch": 16384,
+    "window_size": 1022,
+    "window_overlap": 256,
+    "torch_home": "/scratch/esevinc22/new_TED/torch_cache"
+  },
+
+  "train_limit": 4000,
+  "eval_limit": 2000,
+  "chains_per_batch": 32,
+  "seed": 0,
+
+  "comment_boundary": "A residue counts as a boundary positive within this many residues of a true domain edge; the decoder refuses cuts that would leave a piece shorter than min_domain_length.",
+  "boundary_tolerance": 2,
+  "boundary_epochs": 5,
+  "boundary_learning_rate": 0.05,
+  "boundary_threshold": 0.5,
+  "min_domain_length": 40,
+
+  "classifier_epochs": 15,
+  "classifier_learning_rate": 0.2
+}
