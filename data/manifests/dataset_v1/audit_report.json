@@ -102,7 +102,7 @@
   "leakage": {
     "clean": true,
     "clusters_leaking_train_into_eval": 0,
-    "clusters_spanning_partitions": 7424,
+    "clusters_spanning_partitions": 14233,
     "clusters_total": 37350,
     "examples": {}
   },
@@ -324,12 +324,13 @@
     }
   },
   "splits": {
+    "benchmark_cathe2": 5984,
     "benchmark_chainsaw": 2333,
-    "excluded_homologous": 40192,
+    "excluded_homologous": 117877,
     "excluded_no_cluster": 85697,
-    "excluded_unusable": 37008,
-    "test": 32874,
-    "train": 262991,
-    "validation": 32874
+    "excluded_unusable": 36824,
+    "test": 24526,
+    "train": 196203,
+    "validation": 24525
   }
 }

@@ -106,24 +106,23 @@ Sources are joined on sequence MD5, so boundaries are only compared where the re
 
 | partition | chains |
 |---|---|
+| benchmark_cathe2 | 5984 |
 | benchmark_chainsaw | 2333 |
-| excluded_homologous | 40192 |
+| excluded_homologous | 117877 |
 | excluded_no_cluster | 85697 |
-| excluded_unusable | 37008 |
-| test | 32874 |
-| train | 262991 |
-| validation | 32874 |
+| excluded_unusable | 36824 |
+| test | 24526 |
+| train | 196203 |
+| validation | 24525 |
 
 - homology components: 23021
 - largest component: 22429 chains
 - S35 clusters seen: 37350
-- clusters spanning more than one partition: 7424
+- clusters spanning more than one partition: 14233
 - clusters leaking training into evaluation: 0
 - verdict: clean
 
 Chains excluded from training because they are homologues of a benchmark test chain:
 
-`benchmark_chainsaw`: 40192
-
-> **The CATHe2 classification exclusion is INACTIVE.** No test chains were reserved for `benchmark_cathe2`, so training may contain homologues of that benchmark's test set and any comparison against it is exposed to homology leakage.
+`benchmark_chainsaw`: 39332, `benchmark_cathe2`: 78545
 

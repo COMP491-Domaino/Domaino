@@ -1,3 +1,8 @@
+92c15b952aa49764f40748dad3e1942a8eca44619cb91125050ee9078b10163f  data/raw/benchmarks/cathe2/Y_Test_SF.csv
+750badd2144138ecb2464743e4a1248cdebe38eda1c71387060d0b32a6ddf802  data/raw/benchmarks/cathe2/data.zip
+52e3762e972b71821e87fd860c3c08f9c53d7a03eb9b5f78e0583308e70b39f2  data/raw/benchmarks/chainsaw/README.md
+e0f364afb451f2469174d207dd2e348fab994f230b033f4a365ffecf4de79c37  data/raw/benchmarks/chainsaw/chainsaw_cath1363_train_test_splits.json
+882091cbc2d96fc28ddb9ac6c02dbc981585964aced89eb706c5f720a9496e0d  data/raw/benchmarks/chainsaw/chainsaw_model_v3_on_cath1363_test.csv
 f7fa901a525a3f5305cd24a80a0f47ee51f29ab7fe7df2cd4fa9b13888ce401a  data/raw/cath/v4.4.0/classification/README-cath-domain-boundaries-file-format.txt
 d56c2774d503333a33f1d750e98be4e4ed35eae1dedf0620160c7ea21c226d72  data/raw/cath/v4.4.0/classification/README-cath-domain-desc-file-format.txt
 560c1c0a1558fc3407136cd47796063a6662b740b61769689bffdb688ab8baae  data/raw/cath/v4.4.0/classification/README-cath-list-file-format.txt
@@ -8,6 +13,7 @@ d1db66390cbc1625264d875ab7bdbd32553418528360454ad99f2abd0e62fb93  data/raw/cath/
 9a7b68548a4b755ceda673cfcaba3f19733e1d571f6fafca34e54f62675cdd3a  data/raw/cath/v4.4.0/classification/cath-names-v4_4_0.txt
 ebf77aa25c76c3ae2bed3114437ea73f8cae53de62b374547947ebc8022df2f3  data/raw/cath/v4.4.0/classification/cath-unclassified-list-v4_4_0.txt
 f4469640abdcc1323962a4685fa795fdcf0d7f35426bab0aef124761ec6604a0  data/raw/cath/v4.4.0/sequences/cath-domain-seqs-v4_4_0.fa
+4f80853279e3716114d6ebc20d747b4109dc6974a6d349afe88132a3a98a9d0a  data/raw/pdb/seqres/pdb_seqres.txt.gz
 86062b7ef1a0e0caee0c28cef479ac0d294c80789c51cbf75e513b368ce3a6f6  data/raw/pfam/v38.2/Pfam-A.clans.tsv.gz
 6be816409bc6d3f58005fbecaacfe1542046b87c64ec6e69636b864fc1a9dce5  data/raw/pfam/v38.2/Pfam-A.regions.tsv.gz
 c53a1397f6741c3501f21db2179ad7810d98ddf9f3b3172257bd71ca07ba8c3b  data/raw/pfam/v38.2/Pfam-A.seed.gz

@@ -221,8 +221,22 @@ class BenchmarkLoaderTests(unittest.TestCase):
         )
 
     def test_domain_id_pattern_matches_cath_identifiers(self):
-        found = benchmarks.DOMAIN_ID.findall("results for 1oaiA00 and 3frhA01 today")
-        self.assertEqual([f[0] + f[1] for f in found], ["1oaiA00", "3frhA01"])
+        self.assertEqual(
+            benchmarks.find_domain_ids("results for 1oaiA00 and 3frhA01 today"),
+            {"1oaiA00", "3frhA01"},
+        )
+
+    def test_seven_digit_row_index_is_not_a_domain_id(self):
+        # CATHe2's tables index rows with numbers like 1035679, which have the
+        # same shape as a domain id. Accepting them would build a hold-out of
+        # chains that do not exist, so a real id must contain a letter.
+        self.assertFalse(benchmarks.is_domain_id("1035679"))
+        self.assertTrue(benchmarks.is_domain_id("2vsqA04"))
+        self.assertEqual(benchmarks.find_domain_ids("1035679,1035680"), set())
+
+    def test_row_with_index_and_domain_yields_only_the_domain(self):
+        row = "1035679,1035679,testsequence,2vsqA04,3.40.50.980,testsequence_0_2vsqA04"
+        self.assertEqual(benchmarks.find_domain_ids(row), {"2vsqA04"})
 
     def test_missing_cathe2_id_file_yields_an_empty_holdout(self):
         self.assertEqual(benchmarks.load_cathe2_test_domains(None), set())
@@ -285,6 +299,49 @@ class Cathe2ArchiveTests(unittest.TestCase):
         domains, report = benchmarks.extract_cathe2_test_domains(path, 300)
         self.assertEqual(domains, set())
         self.assertEqual(report["candidates"], [])
+
+    def test_named_domain_column_is_preferred_over_scanning_the_row(self):
+        # Mirrors CATHe2's real Test.csv: a numeric index, the domain id, and a
+        # description that repeats it. Only the Domain column should be read.
+        path = self.make_archive(
+            {
+                "data/Dataset/csv/Test.csv": (
+                    ",Unnamed: 0,Set,Domain,SF,Description,Sequence\n"
+                    "1035679,1035679,testsequence,2vsqA04,3.40.50.980,x_2vsqA04,YREL\n"
+                    "1035680,1035680,testsequence,4ix3A01,3.30.200.20,x_4ix3A01,LKAR\n"
+                )
+            }
+        )
+        domains, report = benchmarks.extract_cathe2_test_domains(path, 2)
+        self.assertEqual(domains, {"2vsqA04", "4ix3A01"})
+        self.assertEqual(report["chosen_column"], "Domain")
+
+    def test_index_only_table_is_not_mistaken_for_a_domain_list(self):
+        # The archive also holds Test_ids_*.csv files of bare row indices.
+        path = self.make_archive(
+            {
+                "data/Dataset/csv/Test_ids_pLDDT_0.csv": (
+                    "Domain_id\n1035679\n1035680\n1035681\n"
+                ),
+            }
+        )
+        domains, report = benchmarks.extract_cathe2_test_domains(path, 3)
+        self.assertEqual(domains, set())
+        self.assertEqual(report["candidates"], [])
+
+    def test_real_table_wins_over_an_index_table(self):
+        path = self.make_archive(
+            {
+                "data/Dataset/csv/Test_ids_pLDDT_0.csv": "Domain_id\n1035679\n1035680\n",
+                "data/Dataset/csv/Test.csv": (
+                    ",Set,Domain,SF\n1035679,testsequence,2vsqA04,3.40.50.980\n"
+                    "1035680,testsequence,4ix3A01,3.30.200.20\n"
+                ),
+            }
+        )
+        domains, report = benchmarks.extract_cathe2_test_domains(path, 2)
+        self.assertEqual(report["chosen"], "data/Dataset/csv/Test.csv")
+        self.assertEqual(domains, {"2vsqA04", "4ix3A01"})
 
     def test_only_small_text_members_are_considered(self):
         path = self.make_archive(

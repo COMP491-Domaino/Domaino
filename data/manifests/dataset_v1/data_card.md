@@ -11,6 +11,9 @@ Training and evaluating a sequence-only model that segments a protein chain into
 | CATH | 4.4.0 | primary ground truth |
 | Pfam | 38.2 | auxiliary region supervision |
 | TED | v5 | lower-confidence pretraining |
+| PDB | seqres-2026-10-24 | chain sequences for CATH choppings |
+| Chainsaw | git-c8837653 | segmentation benchmark hold-out |
+| CATHe2 | zenodo-14970431 | classification benchmark hold-out |
 
 ## Contents
 
@@ -38,13 +41,14 @@ Each record carries a `supervision` block stating which targets it may contribut
 
 | partition | chains |
 |---|---|
+| benchmark_cathe2 | 5984 |
 | benchmark_chainsaw | 2333 |
-| excluded_homologous | 40192 |
+| excluded_homologous | 117877 |
 | excluded_no_cluster | 85697 |
-| excluded_unusable | 37008 |
-| test | 32874 |
-| train | 262991 |
-| validation | 32874 |
+| excluded_unusable | 36824 |
+| test | 24526 |
+| train | 196203 |
+| validation | 24525 |
 
 Chains are grouped into homology components by shared CATH S35 sequence cluster and whole components are assigned together, so no close homologue spans a training and an evaluation partition. A chain that shares an S35 cluster with a published benchmark test chain -- that is, one homologous to it at 35% identity or better -- is never used for training.
 

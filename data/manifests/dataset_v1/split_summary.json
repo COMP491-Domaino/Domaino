@@ -1,31 +1,34 @@
 {
   "component_count": 23021,
   "counts": {
+    "benchmark_cathe2": 5984,
     "benchmark_chainsaw": 2333,
-    "excluded_homologous": 40192,
+    "excluded_homologous": 117877,
     "excluded_no_cluster": 85697,
-    "excluded_unusable": 37008,
-    "test": 32874,
-    "train": 262991,
-    "validation": 32874
+    "excluded_unusable": 36824,
+    "test": 24526,
+    "train": 196203,
+    "validation": 24525
   },
   "digests": {
+    "benchmark_cathe2": "26b2d53e885e11010d8a96a5d67c9927b28a2946973d1d15c7702c65c8c18871",
     "benchmark_chainsaw": "ec3adfa37eea15c9202d5a6432383bb27c23387fef26a95f3046c85018ee729d",
-    "excluded_homologous": "bc8a4efe8c1cd102a97449088fb3cfe9763ffdd4a811ef83c62f1d1dc570cbbc",
+    "excluded_homologous": "aca3f479cb1f337ad849703d2882e373d43352aa8f5b7984257d3866948fcd6c",
     "excluded_no_cluster": "52fba3e837e2da22cae3531f06f96bf0960370138994b301146bc74156d3e1b0",
-    "excluded_unusable": "bc876676d2ebf350eb1d3ad45d1dbda9ca16793a95e8f5f21b7f3b1ce4087123",
-    "test": "efe30d0132fbbc0917a3204ef191c791544ab4dab961071b8197b665110f4407",
-    "train": "61e3cb59b3dfa862ea7fa4c8029b0e3807cba34f7e05eeacaab321f3e620e7cb",
-    "validation": "2cefcefd8251c60ee4718c40c5004c960d9cfaf1f7dcbe1e5909fc10170f0fc7"
+    "excluded_unusable": "cce24840063ea920f95965cabe692326745f04bd028d2db79d17480611ad46ce",
+    "test": "2cc104ffc3028d7214313a6f7815b59c27be4f025915ab44245e5e78a4b5dfa2",
+    "train": "9315eb117a3bfedfe6ad05357c32f548fe1f01daaba2c1d2881df326317e7f5d",
+    "validation": "58d8218a4401dd5fdd9e08b53994a5d17353299fe630807463fe3a13466f784e"
   },
   "excluded_by_benchmark": {
-    "benchmark_chainsaw": 40192
+    "benchmark_cathe2": 78545,
+    "benchmark_chainsaw": 39332
   },
   "largest_component": 22429,
   "leakage": {
     "clean": true,
     "clusters_leaking_train_into_eval": 0,
-    "clusters_spanning_partitions": 7424,
+    "clusters_spanning_partitions": 14233,
     "clusters_total": 37350,
     "examples": {}
   }

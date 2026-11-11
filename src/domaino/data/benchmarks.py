@@ -29,7 +29,26 @@ from typing import Dict, Iterable, List, Optional, Sequence, Set, Tuple
 
 # A CATH domain identifier: 4-character PDB code, chain character, 2-digit
 # domain number, e.g. 1oaiA00.
-DOMAIN_ID = re.compile(r"\b([0-9][a-z0-9]{3}[A-Za-z0-9])([0-9]{2})\b")
+DOMAIN_ID = re.compile(r"\b[0-9][a-z0-9]{3}[A-Za-z0-9][0-9]{2}\b")
+
+# Column names that hold CATH domain identifiers, in preference order.
+DOMAIN_COLUMNS = ("Domain", "domain", "domain_id", "Domain_ID", "cath_id", "CATH_ID")
+
+
+def is_domain_id(token: str) -> bool:
+    """Whether a token really is a CATH domain identifier.
+
+    The shape alone is not enough: a seven-digit row index such as ``1035679``
+    matches it too, and CATHe2's archive is full of them, so a real identifier
+    is additionally required to contain a letter. Accepting indices here would
+    silently produce a hold-out of chains that do not exist.
+    """
+    return bool(DOMAIN_ID.fullmatch(token)) and any(c.isalpha() for c in token)
+
+
+def find_domain_ids(text: str) -> Set[str]:
+    """Every genuine CATH domain identifier in a line of text."""
+    return {m.group(0) for m in DOMAIN_ID.finditer(text) if is_domain_id(m.group(0))}
 
 
 def load_chainsaw_splits(path: str) -> Dict[str, List[str]]:
@@ -79,11 +98,39 @@ def load_cathe2_test_domains(
 
 
 def _domains_from_text(path: str) -> Set[str]:
-    domains: Set[str] = set()
     with open(path, "rt", encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            domains.update(match.group(0) for match in DOMAIN_ID.finditer(line))
+        domains, _ = _domains_from_csv(handle)
     return domains
+
+
+def _domains_from_csv(handle: Iterable[str]) -> Tuple[Set[str], Optional[str]]:
+    """Read domain identifiers from a table, by column where possible.
+
+    Taking a named column beats scanning the whole row: CATHe2's ``Test.csv``
+    carries the identifier in ``Domain`` alongside a numeric index and a free
+    text description, and scanning everything would mix them together. Falls
+    back to scanning when no identifier column is present, as for a plain list.
+    """
+    rows = list(handle)
+    if not rows:
+        return set(), None
+
+    reader = csv.DictReader(rows)
+    fields = reader.fieldnames or []
+    for column in DOMAIN_COLUMNS:
+        if column in fields:
+            values = {
+                (row.get(column) or "").strip()
+                for row in csv.DictReader(rows)
+            }
+            found = {value for value in values if is_domain_id(value)}
+            if found:
+                return found, column
+
+    found = set()
+    for row in rows:
+        found |= find_domain_ids(row)
+    return found, None
 
 
 def zip_text_members(path: str) -> List[zipfile.ZipInfo]:
@@ -126,15 +173,14 @@ def extract_cathe2_test_domains(
                 continue
             with archive.open(info) as member:
                 text = io.TextIOWrapper(member, encoding="utf-8", errors="replace")
-                found: Set[str] = set()
-                for line in text:
-                    found.update(m.group(0) for m in DOMAIN_ID.finditer(line))
+                found, column = _domains_from_csv(text)
             if found:
                 candidates.append(
                     {
                         "member": info.filename,
                         "domains": found,
                         "count": len(found),
+                        "column": column,
                     }
                 )
 
@@ -168,6 +214,7 @@ def extract_cathe2_test_domains(
         report["reason"] = "no expected count given; took the largest candidate"
 
     report["chosen"] = best["member"]
+    report["chosen_column"] = best.get("column")
     report["chosen_count"] = best["count"]
     return set(best["domains"]), report  # type: ignore[arg-type]
 
