@@ -231,6 +231,72 @@ accuracy and macro F1 per CATH level for classification -- and are reported per
 chain category (single-domain, multidomain, discontinuous, long), because a
 good average hides failure on exactly the cases domain parsing is for.
 
+### Domain-segmentation network (T2.3)
+
+The proposal's first, lower-risk design. It reads frozen ESM-2 vectors and
+emits two things:
+
+- **residue logits** `(batch, length, 3)` — linker, inside a domain, or at a
+  boundary
+- **pair logits** `(batch, length, length)` — whether two residues are in the
+  same domain
+
+Both exist because boundary prediction alone cannot express a **discontinuous**
+domain, and the T2.1 baseline showed the concrete failure: a residue-level
+predictor over-segments (domain-count error 2.05 vs 0.30 for assuming one
+domain) because nothing tells it which side of a cut belongs with which. A
+same-domain relation fixes that and is invariant to how domains are numbered,
+so the network never learns CATH's arbitrary ordering.
+
+The trunk is a dilated convolutional stack: linear in length, with a receptive
+field wider than a typical domain. The pair head is **low-rank** — two
+`(length, rank)` projections whose product gives the matrix — because a
+`(length, length, channels)` tensor at 4,128 residues is not affordable; the
+proposal names a low-rank pair representation as the fallback for exactly this
+risk. Training scores a bounded **sample** of pairs rather than all of them,
+and `score_pairs` is tested to agree with the full matrix, since training on a
+different function than inference uses would be a silent mismatch.
+
+Pair targets are masked where either residue is linker: whether a linker
+residue is "in the same domain" as anything has no answer, and supervising it
+as negative would teach the model that linkers repel everything.
+
+The alternative set-prediction (DETR/MaskFormer-style) architecture the
+proposal also names is a separate candidate, still to be implemented before the
+work-package-3 comparison.
+
+### Domain assignment from network outputs (T2.4)
+
+`DomainDecoder` turns those two outputs into domain intervals:
+
+1. residues called linker are unassigned;
+2. assigned stretches are cut at **boundary peaks** — essential, because
+   adjacent CATH domains often touch with no linker (`1chmA01` is 2–156 and
+   `1chmA02` is 157–402), so splitting only on linkers could never separate
+   them;
+3. the resulting blocks are grouped by average-linkage agglomerative clustering
+   on the pairwise probabilities. Grouping *blocks* rather than cutting a
+   sequence is what lets a domain be discontinuous — a cluster may hold blocks
+   far apart. Average linkage with a similarity cut is used rather than a
+   method needing the domain count up front, since the domain count is one of
+   the things being predicted;
+4. the proposal's four constraints are applied: **minimum domain length**
+   (a fragment is absorbed into whichever domain it most resembles, not
+   deleted), **acceptable linker gaps**, **residue coverage** (if too little of
+   the chain is assigned, leftovers go to the nearest domain), and
+   **consistency** (in range, sorted, no residue in two domains — an overlap is
+   not expressible as a CATH chopping).
+
+Every threshold is a post-processing knob the proposal tunes on validation data
+in T3.5; the defaults are plain starting points, not tuned values. The decoder
+always returns at least one domain, because every CATH chain has one.
+
+Run the whole path on real chains:
+
+```bash
+PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/smoke_segmentation.slurm 24 300
+```
+
 ## How the data is represented
 
 One record is **one protein chain as a single source annotates it**. Every

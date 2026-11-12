@@ -1,0 +1,44 @@
+{
+  "comment": "Tasks T2.3 and T2.4: the pairwise domain-segmentation network and the clustering decoder. The decoder's thresholds are plain starting points; the proposal tunes them on validation data in T3.5.",
+  "repo_root": ".",
+  "records": "@/data/processed/dataset_v1/chains.cath.jsonl.gz",
+  "manifest_dir": "@/data/manifests/dataset_v1",
+  "embeddings_root": "@/data/processed/dataset_v1/embeddings",
+  "encoder": {
+    "model_name": "esm2_t33_650M_UR50D",
+    "layer": null,
+    "device": "auto",
+    "half": true,
+    "max_tokens_per_batch": 16384,
+    "window_size": 1022,
+    "window_overlap": 256,
+    "torch_home": "/scratch/esevinc22/new_TED/torch_cache"
+  },
+  "comment_network": "input_dim is taken from the encoder, so it is not set here. Dilations double to give a receptive field wider than a typical domain; pair_rank keeps the pairwise head low-rank so its memory does not grow with the square of chain length.",
+  "network": {
+    "hidden_dim": 256,
+    "dilations": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32
+    ],
+    "kernel_size": 5,
+    "dropout": 0.1,
+    "pair_rank": 64,
+    "max_pairs_per_chain": 40000
+  },
+  "comment_decoder": "The four constraints the proposal names: minimum domain length, acceptable linker gaps, residue coverage and interval consistency.",
+  "decoder": {
+    "linker_threshold": 0.5,
+    "boundary_threshold": 0.5,
+    "same_domain_threshold": 0.5,
+    "min_domain_length": 40,
+    "max_linker_gap": 20,
+    "min_coverage": 0.5,
+    "min_block_length": 5
+  },
+  "learning_rate": 0.001
+}
