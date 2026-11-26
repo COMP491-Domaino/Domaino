@@ -19,4 +19,5 @@ echo "host: $(hostname)"
 nvidia-smi --query-gpu=name --format=csv,noheader 2>/dev/null || true
 echo
 PYTHONPATH=src "${PYTHON}" scripts/smoke_segmentation.py \
+    --architecture "${ARCH:-pairwise}" --dropout "${DROPOUT:-0.0}" \
     --config configs/segmentation_v1.json --chains "${1:-24}" --steps "${2:-300}"

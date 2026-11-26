@@ -285,8 +285,19 @@ def stage_splits(
     expected_cathe2 = len(
         bench_mod.load_cathe2_test_superfamilies(paths.get("cathe2_test_labels"))
     )
-    cathe2_domains = bench_mod.load_cathe2_test_domains(
-        paths.get("cathe2_test_ids"), expected_count=expected_cathe2 or None
+    # Reserving CATHe2 costs 78,545 training chains on CATH 4.4.0, which is a
+    # quarter of the training set. A build may decline to pay that, trading the
+    # CATHe2 classification benchmark for the data; `exclude_cathe2` makes that
+    # a recorded decision rather than something that looks like a failed
+    # download. The Chainsaw reservation is not optional, because segmentation
+    # is the primary claim.
+    exclude_cathe2 = bool(config.get("exclude_cathe2", True))
+    cathe2_domains = (
+        bench_mod.load_cathe2_test_domains(
+            paths.get("cathe2_test_ids"), expected_count=expected_cathe2 or None
+        )
+        if exclude_cathe2
+        else set()
     )
     log(
         f"splits: chainsaw test={len(chainsaw.get('test', []))} "
@@ -294,7 +305,14 @@ def stage_splits(
         f"cathe2 test domains={len(cathe2_domains)} "
         f"(expected about {expected_cathe2 or 'unknown'})"
     )
-    if not cathe2_domains:
+    if not exclude_cathe2:
+        log(
+            "splits: the CATHe2 reservation is OFF by configuration. This build "
+            "trades the CATHe2 classification benchmark for about 84,500 more "
+            "chains; its models may not be compared against CATHe2, and the "
+            "Chainsaw segmentation benchmark is unaffected."
+        )
+    elif not cathe2_domains:
         log(
             "splits: WARNING the CATHe2 exclusion is INACTIVE -- no test-domain "
             "identifiers were available. Classification comparison against "

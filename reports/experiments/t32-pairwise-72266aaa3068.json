@@ -1,0 +1,314 @@
+{
+  "architecture": "pairwise",
+  "code": {
+    "branch": "main",
+    "dirty": "yes",
+    "revision": "c6ae05954033c7833aa38a1fee68b7c1e5c1ab1a"
+  },
+  "config": {
+    "config": {
+      "accumulate_steps": 1,
+      "architecture": "pairwise",
+      "assignment_weight": 1.0,
+      "boundary_weight": 0.5,
+      "boundary_width": 2,
+      "classifier_weight": 1.0,
+      "dropout": 0.1,
+      "epochs": 20,
+      "grad_clip": 1.0,
+      "hidden_dim": 256,
+      "label_min_h_support": 10,
+      "learning_rate": 0.001,
+      "loss_weighting": "balanced",
+      "max_tokens": 24000,
+      "mixed_precision": true,
+      "pairs_per_chain": 4000,
+      "pairwise_weight": 1.0,
+      "seed": 20260404,
+      "source_aware": false,
+      "train_classifier": true,
+      "train_limit": null,
+      "val_limit": null,
+      "weight_decay": 0.0001
+    },
+    "dataset_version": "dataset_v2",
+    "encoder": "esm2_t33_650M_UR50D"
+  },
+  "dataset_version": "dataset_v2",
+  "environment": {
+    "cuda": "12.4",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "gpus": "1",
+    "host": "rk02.kuvalar.ku.edu.tr",
+    "python": "3.10.14",
+    "slurm_job": "2105896",
+    "torch": "2.6.0+cu124"
+  },
+  "epochs_run": 16,
+  "finished_at": "",
+  "gpu_hours": 7.8279,
+  "history": [
+    {
+      "elapsed_minutes": 28.52,
+      "epoch": 0,
+      "train_loss": 11.72723,
+      "val_h_accuracy": 0.1363,
+      "val_h_coverage": 0.2257,
+      "val_h_macro_f1": 0.0259,
+      "val_mean_iou": 0.7348
+    },
+    {
+      "elapsed_minutes": 58.7,
+      "epoch": 1,
+      "train_loss": 5.03021,
+      "val_h_accuracy": 0.3223,
+      "val_h_coverage": 0.4047,
+      "val_h_macro_f1": 0.1027,
+      "val_mean_iou": 0.7803
+    },
+    {
+      "elapsed_minutes": 88.43,
+      "epoch": 2,
+      "train_loss": 2.49673,
+      "val_h_accuracy": 0.44,
+      "val_h_coverage": 0.5535,
+      "val_h_macro_f1": 0.1428,
+      "val_mean_iou": 0.7874
+    },
+    {
+      "elapsed_minutes": 118.04,
+      "epoch": 3,
+      "train_loss": 1.42911,
+      "val_h_accuracy": 0.5202,
+      "val_h_coverage": 0.624,
+      "val_h_macro_f1": 0.1779,
+      "val_mean_iou": 0.7845
+    },
+    {
+      "elapsed_minutes": 147.5,
+      "epoch": 4,
+      "train_loss": 0.9417,
+      "val_h_accuracy": 0.5571,
+      "val_h_coverage": 0.6602,
+      "val_h_macro_f1": 0.1993,
+      "val_mean_iou": 0.8224
+    },
+    {
+      "elapsed_minutes": 177.06,
+      "epoch": 5,
+      "train_loss": 0.71927,
+      "val_h_accuracy": 0.5909,
+      "val_h_coverage": 0.704,
+      "val_h_macro_f1": 0.2123,
+      "val_mean_iou": 0.8279
+    },
+    {
+      "elapsed_minutes": 206.52,
+      "epoch": 6,
+      "train_loss": 0.58613,
+      "val_h_accuracy": 0.5964,
+      "val_h_coverage": 0.7001,
+      "val_h_macro_f1": 0.2148,
+      "val_mean_iou": 0.8367
+    },
+    {
+      "elapsed_minutes": 235.99,
+      "epoch": 7,
+      "train_loss": 0.48889,
+      "val_h_accuracy": 0.6018,
+      "val_h_coverage": 0.6993,
+      "val_h_macro_f1": 0.2168,
+      "val_mean_iou": 0.8355
+    },
+    {
+      "elapsed_minutes": 265.41,
+      "epoch": 8,
+      "train_loss": 0.43124,
+      "val_h_accuracy": 0.6228,
+      "val_h_coverage": 0.7209,
+      "val_h_macro_f1": 0.2285,
+      "val_mean_iou": 0.8425
+    },
+    {
+      "elapsed_minutes": 293.41,
+      "epoch": 9,
+      "train_loss": 0.40751,
+      "val_h_accuracy": 0.6175,
+      "val_h_coverage": 0.7199,
+      "val_h_macro_f1": 0.2291,
+      "val_mean_iou": 0.8386
+    },
+    {
+      "elapsed_minutes": 322.55,
+      "epoch": 10,
+      "train_loss": 0.35021,
+      "val_h_accuracy": 0.6268,
+      "val_h_coverage": 0.7414,
+      "val_h_macro_f1": 0.2313,
+      "val_mean_iou": 0.8487
+    },
+    {
+      "elapsed_minutes": 351.85,
+      "epoch": 11,
+      "train_loss": 0.33025,
+      "val_h_accuracy": 0.6421,
+      "val_h_coverage": 0.7395,
+      "val_h_macro_f1": 0.2334,
+      "val_mean_iou": 0.8455
+    },
+    {
+      "elapsed_minutes": 381.18,
+      "epoch": 12,
+      "train_loss": 0.30329,
+      "val_h_accuracy": 0.6388,
+      "val_h_coverage": 0.744,
+      "val_h_macro_f1": 0.2369,
+      "val_mean_iou": 0.8454
+    },
+    {
+      "elapsed_minutes": 410.67,
+      "epoch": 13,
+      "train_loss": 0.29148,
+      "val_h_accuracy": 0.6468,
+      "val_h_coverage": 0.7542,
+      "val_h_macro_f1": 0.2421,
+      "val_mean_iou": 0.835
+    },
+    {
+      "elapsed_minutes": 440.08,
+      "epoch": 14,
+      "train_loss": 0.27195,
+      "val_h_accuracy": 0.6377,
+      "val_h_coverage": 0.7365,
+      "val_h_macro_f1": 0.2402,
+      "val_mean_iou": 0.8525
+    },
+    {
+      "elapsed_minutes": 469.67,
+      "epoch": 15,
+      "train_loss": 0.26165,
+      "val_h_accuracy": 0.6412,
+      "val_h_coverage": 0.7459,
+      "val_h_macro_f1": 0.2389,
+      "val_mean_iou": 0.8492
+    }
+  ],
+  "name": "T3.2 pairwise",
+  "notes": [
+    "working tree was dirty at launch, so the recorded revision does not fully describe the code that ran"
+  ],
+  "results": {
+    "classification_true_segments": {
+      "domains": 44698,
+      "h_coverage": 0.7365,
+      "levels": {
+        "A": {
+          "accuracy": 0.8564,
+          "classes": 39,
+          "macro_f1": 0.7126,
+          "n": 44698,
+          "worst_class_f1": 0.0
+        },
+        "C": {
+          "accuracy": 0.9398,
+          "classes": 5,
+          "macro_f1": 0.7222,
+          "n": 44698,
+          "worst_class_f1": 0.2329
+        },
+        "H": {
+          "accuracy": 0.6377,
+          "classes": 2679,
+          "macro_f1": 0.2402,
+          "n": 44698,
+          "worst_class_f1": 0.0
+        },
+        "T": {
+          "accuracy": 0.7641,
+          "classes": 854,
+          "macro_f1": 0.4465,
+          "n": 44698,
+          "worst_class_f1": 0.0
+        }
+      }
+    },
+    "segmentation": {
+      "all": {
+        "chains": 32874,
+        "correctly_parsed": 33137,
+        "domain_count_exact": 0.8261,
+        "domain_count_mae": 0.234,
+        "domains_predicted": 46866,
+        "domains_true": 46274,
+        "mean_boundary_error": 11.018,
+        "mean_iou": 0.8525,
+        "pct_correct_at_080": 0.7161
+      },
+      "continuous": {
+        "chains": 28605,
+        "correctly_parsed": 28613,
+        "domain_count_exact": 0.8567,
+        "domain_count_mae": 0.1981,
+        "domains_predicted": 37921,
+        "domains_true": 36164,
+        "mean_boundary_error": 8.993,
+        "mean_iou": 0.879,
+        "pct_correct_at_080": 0.7912
+      },
+      "discontinuous": {
+        "chains": 4269,
+        "correctly_parsed": 4524,
+        "domain_count_exact": 0.6212,
+        "domain_count_mae": 0.4743,
+        "domains_predicted": 8945,
+        "domains_true": 10110,
+        "mean_boundary_error": 24.588,
+        "mean_iou": 0.6746,
+        "pct_correct_at_080": 0.4475
+      },
+      "long": {
+        "chains": 3245,
+        "correctly_parsed": 3221,
+        "domain_count_exact": 0.4083,
+        "domain_count_mae": 1.0622,
+        "domains_predicted": 9104,
+        "domains_true": 7531,
+        "mean_boundary_error": 35.955,
+        "mean_iou": 0.6682,
+        "pct_correct_at_080": 0.4277
+      },
+      "multidomain": {
+        "chains": 9911,
+        "correctly_parsed": 12551,
+        "domain_count_exact": 0.6161,
+        "domain_count_mae": 0.466,
+        "domains_predicted": 20830,
+        "domains_true": 23311,
+        "mean_boundary_error": 21.231,
+        "mean_iou": 0.6995,
+        "pct_correct_at_080": 0.5384
+      },
+      "single_domain": {
+        "chains": 22963,
+        "correctly_parsed": 20586,
+        "domain_count_exact": 0.9167,
+        "domain_count_mae": 0.1338,
+        "domains_predicted": 26036,
+        "domains_true": 22963,
+        "mean_boundary_error": 6.61,
+        "mean_iou": 0.9185,
+        "pct_correct_at_080": 0.8965
+      }
+    }
+  },
+  "run_id": "t32-pairwise-72266aaa3068",
+  "runtime_seconds": 28180.4,
+  "seed": 20260404,
+  "selected": {
+    "checkpoint": "./data/processed/dataset_v2/checkpoints/t32-pairwise-72266aaa3068-best.pt",
+    "epoch": 14,
+    "val_mean_iou": 0.8525
+  },
+  "started_at": "2026-11-25T23:11:31Z",
+  "status": "running"
+}

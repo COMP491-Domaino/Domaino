@@ -151,6 +151,45 @@ class AssignmentTests(unittest.TestCase):
         plan = splits.assign(clusters, cathe2_test={"c2A"})
         self.assertEqual(plan.assignment["c2A"], splits.BENCHMARK_CATHE2)
 
+    def test_declining_the_cathe2_reservation_frees_its_chains(self):
+        """dataset_v2's one difference from dataset_v1.
+
+        Passing no CATHe2 chains must put the benchmark chain *and* its S35
+        homologues back into the trainable pool, and must not touch the
+        Chainsaw reservation, which is what keeps the segmentation benchmark
+        valid for both datasets.
+        """
+        clusters = {
+            "c2A": ["1.10.10.10.1"],
+            "homA": ["1.10.10.10.1"],
+            "csawA": ["2.20.20.20.2"],
+            "csawHomA": ["2.20.20.20.2"],
+            "farA": ["9.90.90.90.9"],
+        }
+        reserved = splits.assign(
+            clusters, chainsaw_test={"csawA"}, cathe2_test={"c2A"}
+        )
+        self.assertEqual(reserved.assignment["c2A"], splits.BENCHMARK_CATHE2)
+        self.assertEqual(
+            reserved.assignment["homA"], splits.EXCLUDED_HOMOLOGOUS
+        )
+
+        freed = splits.assign(clusters, chainsaw_test={"csawA"}, cathe2_test=set())
+        trainable = (splits.TRAIN, splits.VALIDATION, splits.TEST)
+        self.assertIn(freed.assignment["c2A"], trainable)
+        self.assertIn(freed.assignment["homA"], trainable)
+        # ...while Chainsaw is untouched in both.
+        for plan in (reserved, freed):
+            self.assertEqual(
+                plan.assignment["csawA"], splits.BENCHMARK_CHAINSAW
+            )
+            self.assertEqual(
+                plan.assignment["csawHomA"], splits.EXCLUDED_HOMOLOGOUS
+            )
+        self.assertNotIn(
+            splits.BENCHMARK_CATHE2, set(freed.assignment.values())
+        )
+
     def test_benchmark_chain_with_untrustworthy_labels_still_gets_evaluated(self):
         # Chainsaw brings its own ground truth, so a sound sequence is enough
         # even when our CATH labels for that chain are not usable for training.

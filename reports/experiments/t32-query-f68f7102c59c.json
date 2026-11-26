@@ -1,0 +1,224 @@
+{
+  "architecture": "query",
+  "code": {
+    "branch": "main",
+    "dirty": "yes",
+    "revision": "c6ae05954033c7833aa38a1fee68b7c1e5c1ab1a"
+  },
+  "config": {
+    "config": {
+      "accumulate_steps": 1,
+      "architecture": "query",
+      "assignment_weight": 1.0,
+      "boundary_weight": 0.5,
+      "boundary_width": 2,
+      "classifier_weight": 1.0,
+      "dropout": 0.1,
+      "epochs": 6,
+      "grad_clip": 1.0,
+      "hidden_dim": 256,
+      "label_min_h_support": 10,
+      "learning_rate": 0.001,
+      "loss_weighting": "balanced",
+      "max_tokens": 12000,
+      "mixed_precision": true,
+      "pairs_per_chain": 4000,
+      "pairwise_weight": 1.0,
+      "seed": 20260404,
+      "source_aware": true,
+      "train_classifier": true,
+      "train_limit": 4000,
+      "val_limit": 500,
+      "weight_decay": 0.0001
+    },
+    "dataset_version": "dataset_v1",
+    "encoder": "esm2_t33_650M_UR50D"
+  },
+  "dataset_version": "dataset_v1",
+  "environment": {
+    "cuda": "12.4",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "gpus": "1",
+    "host": "rk02.kuvalar.ku.edu.tr",
+    "python": "3.10.14",
+    "slurm_job": "2100965",
+    "torch": "2.6.0+cu124"
+  },
+  "epochs_run": 6,
+  "finished_at": "2026-11-24T22:56:31Z",
+  "gpu_hours": 0.0377,
+  "history": [
+    {
+      "elapsed_minutes": 0.45,
+      "epoch": 0,
+      "train_loss": 34.8739,
+      "val_h_accuracy": 0.0,
+      "val_h_coverage": 0.0,
+      "val_h_macro_f1": 0.0,
+      "val_mean_iou": 0.7406
+    },
+    {
+      "elapsed_minutes": 0.77,
+      "epoch": 1,
+      "train_loss": 20.74668,
+      "val_h_accuracy": 0.0,
+      "val_h_coverage": 0.0,
+      "val_h_macro_f1": 0.0,
+      "val_mean_iou": 0.7752
+    },
+    {
+      "elapsed_minutes": 1.07,
+      "epoch": 2,
+      "train_loss": 18.99498,
+      "val_h_accuracy": 0.0,
+      "val_h_coverage": 0.0,
+      "val_h_macro_f1": 0.0,
+      "val_mean_iou": 0.8434
+    },
+    {
+      "elapsed_minutes": 1.47,
+      "epoch": 3,
+      "train_loss": 17.52513,
+      "val_h_accuracy": 0.005,
+      "val_h_coverage": 0.0264,
+      "val_h_macro_f1": 0.0018,
+      "val_mean_iou": 0.7557
+    },
+    {
+      "elapsed_minutes": 1.87,
+      "epoch": 4,
+      "train_loss": 16.12006,
+      "val_h_accuracy": 0.0,
+      "val_h_coverage": 0.0,
+      "val_h_macro_f1": 0.0,
+      "val_mean_iou": 0.8384
+    },
+    {
+      "elapsed_minutes": 2.26,
+      "epoch": 5,
+      "train_loss": 14.9355,
+      "val_h_accuracy": 0.0,
+      "val_h_coverage": 0.0,
+      "val_h_macro_f1": 0.0,
+      "val_mean_iou": 0.7908
+    }
+  ],
+  "name": "T3.2 query (smoke)",
+  "notes": [
+    "working tree was dirty at launch, so the recorded revision does not fully describe the code that ran"
+  ],
+  "results": {
+    "classification_true_segments": {
+      "domains": 605,
+      "h_coverage": 0.0,
+      "levels": {
+        "A": {
+          "accuracy": 0.3008,
+          "classes": 22,
+          "macro_f1": 0.071,
+          "n": 605,
+          "worst_class_f1": 0.0
+        },
+        "C": {
+          "accuracy": 0.4777,
+          "classes": 5,
+          "macro_f1": 0.2962,
+          "n": 605,
+          "worst_class_f1": 0.0
+        },
+        "H": {
+          "accuracy": 0.0,
+          "classes": 171,
+          "macro_f1": 0.0,
+          "n": 605,
+          "worst_class_f1": 0.0
+        },
+        "T": {
+          "accuracy": 0.0347,
+          "classes": 132,
+          "macro_f1": 0.0037,
+          "n": 605,
+          "worst_class_f1": 0.0
+        }
+      }
+    },
+    "segmentation": {
+      "all": {
+        "chains": 500,
+        "correctly_parsed": 403,
+        "domain_count_exact": 0.832,
+        "domain_count_mae": 0.21,
+        "domains_predicted": 500,
+        "domains_true": 605,
+        "mean_boundary_error": 14.182,
+        "mean_iou": 0.8434,
+        "pct_correct_at_080": 0.6661
+      },
+      "continuous": {
+        "chains": 465,
+        "correctly_parsed": 403,
+        "domain_count_exact": 0.8946,
+        "domain_count_mae": 0.1376,
+        "domains_predicted": 465,
+        "domains_true": 529,
+        "mean_boundary_error": 9.935,
+        "mean_iou": 0.8859,
+        "pct_correct_at_080": 0.7618
+      },
+      "discontinuous": {
+        "chains": 35,
+        "correctly_parsed": 0,
+        "domain_count_exact": 0.0,
+        "domain_count_mae": 1.1714,
+        "domains_predicted": 35,
+        "domains_true": 76,
+        "mean_boundary_error": 70.607,
+        "mean_iou": 0.2795,
+        "pct_correct_at_080": 0.0
+      },
+      "long": {
+        "chains": 20,
+        "correctly_parsed": 5,
+        "domain_count_exact": 0.25,
+        "domain_count_mae": 1.4,
+        "domains_predicted": 20,
+        "domains_true": 48,
+        "mean_boundary_error": 102.35,
+        "mean_iou": 0.3689,
+        "pct_correct_at_080": 0.1042
+      },
+      "multidomain": {
+        "chains": 84,
+        "correctly_parsed": 0,
+        "domain_count_exact": 0.0,
+        "domain_count_mae": 1.25,
+        "domains_predicted": 84,
+        "domains_true": 189,
+        "mean_boundary_error": 69.946,
+        "mean_iou": 0.2625,
+        "pct_correct_at_080": 0.0
+      },
+      "single_domain": {
+        "chains": 416,
+        "correctly_parsed": 403,
+        "domain_count_exact": 1.0,
+        "domain_count_mae": 0.0,
+        "domains_predicted": 416,
+        "domains_true": 416,
+        "mean_boundary_error": 2.922,
+        "mean_iou": 0.9608,
+        "pct_correct_at_080": 0.9688
+      }
+    }
+  },
+  "run_id": "t32-query-f68f7102c59c",
+  "runtime_seconds": 135.9,
+  "seed": 20260404,
+  "selected": {
+    "checkpoint": "./data/processed/dataset_v1/checkpoints/t32-query-f68f7102c59c-best.pt",
+    "epoch": 2,
+    "val_mean_iou": 0.8434
+  },
+  "started_at": "2026-11-24T22:54:10Z",
+  "status": "completed"
+}

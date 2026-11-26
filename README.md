@@ -23,8 +23,14 @@ reports/            baseline and benchmark results  (tracked)
 scripts/            download, verification and Slurm wrappers
 src/domaino/
   data/             work package 1: the data pipeline
-  model/            work package 2: representation, baselines, model
+  model/            work package 2: representation, baselines, model, losses
+  train/            work package 3: protocol, registry, trainer
+  service/          work package 4: the backend inference service
   metrics.py        segmentation and classification measures
+docs/
+  api/              the versioned API contract (T4.1)
+  wp4/              user flow and wireframes (T4.1)
+web/mock/           the mocked interface (T4.1)
 tests/              unit tests
 ```
 
@@ -261,9 +267,34 @@ Pair targets are masked where either residue is linker: whether a linker
 residue is "in the same domain" as anything has no answer, and supervising it
 as negative would teach the model that linkers repel everything.
 
-The alternative set-prediction (DETR/MaskFormer-style) architecture the
-proposal also names is a separate candidate, still to be implemented before the
-work-package-3 comparison.
+### Query-based segmentation, the second candidate (T2.3)
+
+The proposal names two segmentation designs and picks between them on measured
+performance in WP3. `src/domaino/model/query_segmentation.py` is the second:
+a fixed set of learned **domain queries** attends to the ESM-2 residue vectors
+through a small transformer decoder, and each query predicts a **residue
+membership mask** plus a **domain / no-domain** score. **Bipartite (Hungarian)
+matching** pairs the unordered predicted masks with the true domains during
+training, so the model is never asked to reproduce CATH's arbitrary domain
+numbering.
+
+What it buys: a mask can select separated positions, so a discontinuous domain
+is expressed directly — no pair matrix, and **no clustering step**; decoding is
+thresholding plus the same length and gap tidying the other decoder applies.
+Its output grows with queries × length rather than length².
+
+What it costs, exactly as the proposal warns: a **fixed maximum number of
+domains**. `num_queries` defaults to **20** because the most domains any chain
+in dataset_v1 carries is 20 (`3vkgA`), so the limit does not bind on this data;
+a chain with more domains than queries would lose some.
+
+Both candidates read the same `trunk.ResidueTrunk`, so comparing them compares
+the heads and nothing else. Run either:
+
+```bash
+ARCH=pairwise PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/smoke_segmentation.slurm 24 300
+ARCH=query    PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/smoke_segmentation.slurm 24 300
+```
 
 ### Domain assignment from network outputs (T2.4)
 
@@ -296,6 +327,239 @@ Run the whole path on real chains:
 ```bash
 PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/smoke_segmentation.slurm 24 300
 ```
+
+### Hierarchical CATH classifier (T2.5)
+
+`model/classifier.py` classifies a pooled domain embedding at all four CATH
+levels at once. Two decisions matter:
+
+* **Paths are decoded together, not per level.** The chosen Architecture must
+  be a child of the chosen Class, and so on, so the answer is always a node
+  CATH actually contains. Deciding each level independently produces
+  combinations that do not exist.
+* **H abstains.** A superfamily label is withheld unless that superfamily had
+  at least `min_h_support` training domains *and* clears a confidence
+  threshold. `h_coverage` is reported next to accuracy, because a model that
+  answers only when sure otherwise looks better than one that always answers.
+
+The label space is built from the **training split alone**. A classifier able
+to emit a superfamily it never trained on would be scored on a label space the
+validation split defined, which is a quiet form of leakage.
+
+### Source-aware targets and losses (T2.6)
+
+`model/losses.py` splits the training objective into the four separate losses
+the proposal asks for, each masked by what the record's source is entitled to
+supervise:
+
+| Term | What it asks | CATH | Pfam | TED |
+|---|---|---|---|---|
+| residue assignment | is this residue inside a domain? | every residue | **annotated regions only** | every residue (high/medium consensus) |
+| boundary | is this residue at a domain edge? | every residue | within annotated regions | every residue |
+| pairwise grouping | do these two residues share a domain? | yes | **never** | high/medium consensus only |
+| CATH classification | which superfamily? | yes | **never** | weakly, where TED resolved one |
+
+Two consequences are worth knowing before reading a result:
+
+* Pfam contributes **positives and no negatives** to the assignment term,
+  because an unannotated residue is unknown rather than linker. That is a real
+  bias, and it is why its record weight is 0.3 rather than 1.0.
+* The **query architecture cannot use an incomplete source at all.** Set
+  prediction supervises every unmatched query to answer "no domain", which is
+  only true if the targets are every domain in the chain. So Pfam is a
+  per-chain gate there, not a per-residue mask, while the pairwise design can
+  still learn from it.
+
+The assignment and boundary terms are binary cross-entropies on **marginals**
+of the one 3-way residue distribution — P(in domain) = p(domain) + p(boundary),
+P(boundary) = p(boundary) — so they need no extra parameters and do not change
+the checkpoint format.
+
+The switch is off by default (`"source_aware": false` in
+`configs/train_v1.json`), because T3.2 trains on CATH alone, where every mask
+is open, and turning it on would make the runs already in
+`reports/experiments/` irreproducible from that file. T3.3's Pfam and TED arms
+require it:
+
+```bash
+ARCH=pairwise EXTRA=--source-aware \
+  PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/train_t32.slurm
+```
+
+## Two datasets, and why
+
+`dataset_v1` reserves both benchmarks. `dataset_v2` differs in exactly one
+way: it does not reserve the CATHe2 classification benchmark or its S35
+homologues.
+
+| | dataset_v1 | dataset_v2 |
+|---|---|---|
+| train | 196,203 | **262,991** |
+| validation / test | 24,525 / 24,526 | 32,874 / 32,874 |
+| `benchmark_chainsaw` | 2,333 | 2,333 |
+| `benchmark_cathe2` | 5,984 | — not reserved |
+| excluded as benchmark homologues | 117,877 | 40,192 |
+| CHAINSAW segmentation benchmark | valid | valid |
+| CATHe2 classification benchmark | valid | **not usable** |
+
+Reserving CATHe2 costs 78,545 training chains — a quarter of the training set
+— because its test domains are spread across CATH's superfamilies. `dataset_v2`
+declines to pay that, which is the right trade for a segmentation-first model
+and the wrong one for a classification claim. Both exist, so neither claim has
+to be given up: the `dataset_v1` models remain the ones any CATHe2 number
+rests on.
+
+The Chainsaw reservation is **not** configurable. It and its 1-hop homologues
+are held out of both datasets, which is what keeps `reports/benchmarks/`
+comparable across them, and the holdout is asserted rather than assumed — zero
+of the 1,363 CATH1363 chains appear in either dataset's train, validation or
+test lists.
+
+Two things `dataset_v2` does **not** do:
+
+* It does not recover the 85,697 chains that have boundaries but no classified
+  domain. Those have no S35 cluster, so their homology to the Chainsaw
+  benchmark cannot be established; training on them would put the
+  *segmentation* benchmark at risk rather than just the classification one.
+  Recovering them needs an MMseqs2 clustering pass first.
+* It does not make `val_mean_iou` comparable to `dataset_v1`'s. The re-split
+  moved 16,379 chains out of train and brought 83,167 in, so the two
+  validation sets are different sets of chains. Compare the two datasets'
+  models on the benchmark, never on their validation scores.
+
+Building it re-runs only the split stage, over the same records:
+
+```bash
+CONFIG=configs/dataset_v2.json PYTHON=~/.conda/envs/ted/bin/python \
+  sbatch scripts/build_dataset.slurm splits,report
+```
+
+## Training the complete models (work package 3)
+
+### Experiment protocol and registry (T3.1)
+
+`train/protocol.py` holds everything a run may not change: the seeds, the
+dataset version (`dataset_v1`), the checkpoint-selection metric
+(`val_mean_iou`), early-stopping patience, the per-run and total GPU-hour
+budgets, and the reporting groups every result is broken down by
+(`single_domain`, `multidomain`, `continuous`, `discontinuous`, `long`). It is
+Python rather than a config file precisely so that a run cannot quietly
+override it.
+
+Every run writes a record to `reports/experiments/` carrying its id, config
+hash, seed, git revision and dirtiness, environment, per-epoch history, the
+selected checkpoint and the final metrics. The registry also tracks the
+budget, and a run refuses to start once it is exhausted.
+
+### Training a model (T3.2)
+
+```bash
+# both candidate architectures on dataset_v1, under identical conditions
+ARCH=pairwise PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/train_t32.slurm
+ARCH=query    PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/train_t32.slurm
+
+# a few minutes on a small subset, to check the whole path runs
+ARCH=pairwise SMOKE=1 PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/train_t32.slurm
+
+# the winning architecture on all the data dataset_v2 makes available
+ARCH=pairwise PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/train_t32_v2.slurm
+```
+
+A run records its own `dataset_version` from its config, so the registry
+cannot attribute a `dataset_v2` result to `dataset_v1`, and the benchmark
+runner picks its checkpoints per (architecture, dataset) for the same reason.
+
+Both architectures train through one file (`train/trainer.py`) on purpose:
+T3.2 requires them trained under the same conditions, and the surest way to
+mean that is for the optimiser, batching, precision, early stopping and
+selection rule to be literally the same code. They also share
+`model/trunk.py`, so the comparison isolates the heads.
+
+The classifier is trained on **ground-truth** segments: early in training the
+predicted domains are noise, and classifying noise teaches nothing about CATH.
+Evaluation then reports both modes, which is how a segmentation error is kept
+distinguishable from a classification error.
+
+Requires the embedding caches from T2.2 — a run refuses to start without them
+rather than embedding on the fly at unpredictable speed.
+
+### Benchmark evaluation (T3.7)
+
+```bash
+# the benchmark chains need their own embedding cache first (~30 s)
+PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/embed_split.slurm benchmark_chainsaw
+PYTHON=~/.conda/envs/ted/bin/python sbatch scripts/run_benchmark.slurm
+```
+
+Writes [`reports/benchmarks/chainsaw_cath1363.md`](reports/benchmarks/chainsaw_cath1363.md).
+With no `CHECKPOINTS` the runner takes the best **full** run per architecture
+from the experiment registry, skipping smoke runs — a two-minute smoke
+checkpoint sitting in a benchmark report next to real ones is a number
+somebody would quote.
+
+Chainsaw's repository publishes its per-chain predictions *and* its per-chain
+metric values on CATH1363, which makes a careful comparison possible and
+revealed a trap. Their published `iou` column **cannot be reproduced** from
+their own choppings by a residue-level domain IoU: recomputing it with our
+code gives 0.853 where they report 0.881, and the disagreements concentrate in
+chains where a predicted domain covers residues their ground truth leaves
+unassigned, so their IoU is the more forgiving definition. The metric details
+are in Supplementary Material we do not have.
+
+So the report scores **their predictions with our code** and compares Domaino
+against that row, with their published figure shown separately. Quoting
+Domaino's number against their published one would move the comparison by
+about three IoU points for reasons that have nothing to do with either model.
+
+Two further things the report states rather than hides: Chainsaw reads 3D
+structure while Domaino reads sequence alone, and the two ground truths index
+different coordinate spaces (observed structure residues versus SEQRES), so
+each method is scored against its own. `ground_truth_agreement` measures how
+far apart they are — they agree on the domain count for 86.5% of chains, with
+a mean domain-size-distribution distance of 0.012.
+
+## Web platform (work package 4)
+
+### User flow, wireframes and API contract (T4.1)
+
+* [`docs/wp4/user_flow.md`](docs/wp4/user_flow.md) — the workflow from
+  submission to interpretation, the wireframes, and the conventions
+* [`docs/api/domaino-api-v1.json`](docs/api/domaino-api-v1.json) — the
+  versioned API contract, also served live at `GET /api/v1/schema`
+* `web/mock/index.html` — the interactive interface
+
+The contract is not a document that describes the code; the backend **loads it
+at runtime** and validates every request and every response against it, so a
+drift between the two fails a test instead of reaching a browser.
+
+### Backend inference service (T4.2)
+
+```bash
+# mocked predictions, with the interface, at http://127.0.0.1:8080/
+PYTHONPATH=src ~/.conda/envs/ted/bin/python -m domaino.service --static web/mock
+
+# a trained model from WP3
+PYTHONPATH=src ~/.conda/envs/ted/bin/python -m domaino.service \
+    --checkpoint data/processed/dataset_v1/checkpoints/<run-id>-best.pt \
+    --encoder-config configs/representation_v1.json \
+    --static web/mock
+```
+
+`--checkpoint` is the only difference between the mocked system and the real
+one. Without it the service serves clearly labelled simulated results
+(`model.mode == "mock"`), which is what makes the interface demonstrable
+before training finishes; if a checkpoint fails to load, the service says so
+and falls back rather than refusing to start.
+
+The service runs on the standard library. No web framework is installed in
+this cluster's environment and the compute nodes that hold the model and the
+ESM-2 weights have no outbound internet, so a framework dependency would make
+the service unrunnable exactly where it has to run.
+
+A submitted sequence lives in its job and nowhere else, is dropped the moment
+the prediction finishes, and cannot be serialised by `Job.as_json` — asserted
+in `tests/test_service.py`. Results expire after an hour by default, the store
+is bounded, and `DELETE` forgets a job immediately.
 
 ## How the data is represented
 

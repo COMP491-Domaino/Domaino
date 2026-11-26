@@ -1,0 +1,313 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://domaino.ku.edu.tr/schema/v1",
+  "title": "Domaino prediction API, version 1.0",
+  "description": "Task T4.1's API contract: the one definition the model, backend and frontend all read. The backend validates every request and every response it emits against these schemas, so a contract violation fails a test rather than reaching a user. Breaking changes bump the major version and get a new path prefix (/api/v2); additive fields do not.",
+  "x-api-version": "1.0",
+  "x-base-path": "/api/v1",
+  "x-endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/v1/health",
+      "description": "Liveness plus which model is loaded. Safe to poll.",
+      "responses": {"200": "#/$defs/Health"}
+    },
+    {
+      "method": "POST",
+      "path": "/api/v1/predictions",
+      "description": "Submit a sequence. Returns immediately with a job; prediction runs in the background because ESM-2 inference on a long chain takes seconds to minutes.",
+      "request": "#/$defs/PredictionRequest",
+      "responses": {
+        "202": "#/$defs/Job",
+        "400": "#/$defs/ErrorResponse",
+        "413": "#/$defs/ErrorResponse",
+        "503": "#/$defs/ErrorResponse"
+      }
+    },
+    {
+      "method": "GET",
+      "path": "/api/v1/predictions/{job_id}",
+      "description": "Poll a job. The same shape throughout its life: `status` says whether `result` or `error` is present.",
+      "responses": {"200": "#/$defs/Job", "404": "#/$defs/ErrorResponse"}
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/v1/predictions/{job_id}",
+      "description": "Forget a job and the sequence it carried. Part of the privacy commitment in WP4's objectives, and the reason a submitted sequence is never written anywhere else.",
+      "responses": {"204": null, "404": "#/$defs/ErrorResponse"}
+    }
+  ],
+
+  "$defs": {
+    "PredictionRequest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence"],
+      "properties": {
+        "sequence": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 250000,
+          "description": "One protein sequence. A leading FASTA header line and any internal whitespace or case are accepted and normalised by the backend, which reports what it did in `result.warnings`; multi-record FASTA is rejected rather than silently truncated to the first record. This limit counts characters, not residues, because the field also carries the header and line breaks; the residue limit is 100,000 and exceeding it is reported as `sequence_too_long` rather than as a contract violation, which tells the user something they can act on."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Label shown in the interface. Defaults to the FASTA header, or to the job id."
+        },
+        "options": {"$ref": "#/$defs/PredictionOptions"}
+      }
+    },
+
+    "PredictionOptions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "architecture": {
+          "enum": ["pairwise", "query"],
+          "description": "Which trained segmentation model to use. Defaults to whichever won on validation mean IoU in WP3."
+        },
+        "include_tracks": {
+          "type": "boolean",
+          "default": false,
+          "description": "Return per-residue probabilities. The sequence view needs them for its confidence ribbon; a scripted caller usually does not, and they are one float per residue."
+        },
+        "include_structure": {
+          "type": "boolean",
+          "default": false,
+          "description": "Request optional structure prediction (T4.5). Never blocks the sequence-only result: if it fails, `result` still arrives and a warning explains the absence."
+        }
+      }
+    },
+
+    "Job": {
+      "type": "object",
+      "required": ["job_id", "status", "api_version", "submitted_at"],
+      "properties": {
+        "job_id": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "status": {
+          "enum": ["queued", "running", "succeeded", "failed"],
+          "description": "`succeeded` guarantees `result`; `failed` guarantees `error`."
+        },
+        "api_version": {"const": "1.0"},
+        "name": {"type": "string"},
+        "submitted_at": {"type": "string", "format": "date-time"},
+        "started_at": {"type": ["string", "null"], "format": "date-time"},
+        "finished_at": {"type": ["string", "null"], "format": "date-time"},
+        "progress": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "stage": {
+              "enum": ["validating", "embedding", "segmenting", "classifying", "done"],
+              "description": "Named stages rather than a percentage: the frontend shows what is happening, and a stage that stalls names itself."
+            },
+            "message": {"type": "string"}
+          }
+        },
+        "result": {"$ref": "#/$defs/Prediction"},
+        "error": {"$ref": "#/$defs/Error"},
+        "links": {
+          "type": "object",
+          "properties": {"self": {"type": "string"}}
+        }
+      }
+    },
+
+    "Prediction": {
+      "type": "object",
+      "description": "The inference-output schema of deliverable D2.3, as the API exposes it.",
+      "required": ["sequence_length", "domains", "model", "provenance"],
+      "properties": {
+        "name": {"type": "string"},
+        "sequence_length": {"type": "integer", "minimum": 1},
+        "domains": {"type": "array", "items": {"$ref": "#/$defs/Domain"}},
+        "unassigned": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Segment"},
+          "description": "Residues in no predicted domain: linkers, tails, and anything the decoder's coverage constraint left out. Present so the sequence view can colour every residue and never leave a silent gap."
+        },
+        "tracks": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Per-residue probabilities, same length as the sequence. Only when `options.include_tracks` was set.",
+          "properties": {
+            "in_domain": {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 1}},
+            "boundary": {"type": "array", "items": {"type": "number", "minimum": 0, "maximum": 1}}
+          }
+        },
+        "model": {"$ref": "#/$defs/ModelInfo"},
+        "warnings": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/Warning"},
+          "description": "Things the user should know that are not failures: a normalised sequence, a chain longer than ESM-2's training crop, an abstained superfamily, an unavailable optional service."
+        },
+        "provenance": {"$ref": "#/$defs/Provenance"}
+      }
+    },
+
+    "Domain": {
+      "type": "object",
+      "required": ["index", "segments", "length", "discontinuous", "confidence"],
+      "properties": {
+        "index": {"type": "integer", "minimum": 1, "description": "1-based position in this prediction. Not a CATH domain number."},
+        "segments": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/Segment"},
+          "description": "More than one segment means a discontinuous domain, which the pairwise and query designs both represent and which a boundary-only model cannot."
+        },
+        "length": {"type": "integer", "minimum": 1, "description": "Total residues, summed over segments."},
+        "discontinuous": {"type": "boolean"},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1, "description": "Model confidence in the segmentation of this domain, not in its CATH label."},
+        "cath": {"$ref": "#/$defs/CathAssignment"}
+      }
+    },
+
+    "Segment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start", "end"],
+      "description": "A 1-based inclusive residue interval into the submitted sequence. The same convention the dataset uses, so a result can be compared with CATH without re-indexing.",
+      "properties": {
+        "start": {"type": "integer", "minimum": 1},
+        "end": {"type": "integer", "minimum": 1}
+      }
+    },
+
+    "CathAssignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Hierarchical label. C, A and T are always present; H may be unresolved, which is a result and not an error.",
+      "properties": {
+        "C": {"$ref": "#/$defs/CathLevel"},
+        "A": {"$ref": "#/$defs/CathLevel"},
+        "T": {"$ref": "#/$defs/CathLevel"},
+        "H": {"$ref": "#/$defs/CathLevel"},
+        "path": {"type": "string", "description": "The chosen levels joined, e.g. `3.40.50.300`, truncated where the model abstained."}
+      }
+    },
+
+    "CathLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "code": {"type": ["string", "null"], "description": "CATH code at this level, or null when unresolved."},
+        "name": {"type": ["string", "null"], "description": "Human-readable CATH name, when one is known."},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "status": {
+          "enum": ["assigned", "unresolved"],
+          "description": "`unresolved` with a `reason` whenever the model declined: too few training domains in that superfamily, or probability below the calibrated threshold."
+        },
+        "reason": {"type": "string"}
+      }
+    },
+
+    "ModelInfo": {
+      "type": "object",
+      "required": ["architecture", "mode"],
+      "description": "Which model produced this, in enough detail to reproduce it from the experiment registry.",
+      "properties": {
+        "architecture": {"enum": ["pairwise", "query"]},
+        "mode": {
+          "enum": ["trained", "mock"],
+          "description": "`mock` means the backend had no checkpoint and returned a plausible simulated result. The interface must label it, and no mock result may ever be presented as a prediction."
+        },
+        "run_id": {"type": ["string", "null"], "description": "Run id in reports/experiments/, which carries the seed, config, revision and metrics."},
+        "encoder": {"type": ["string", "null"]},
+        "dataset_version": {"type": ["string", "null"]},
+        "selection": {
+          "type": "object",
+          "description": "The validation metric the checkpoint was selected on.",
+          "properties": {
+            "metric": {"type": "string"},
+            "value": {"type": ["number", "null"]},
+            "epoch": {"type": ["integer", "null"]}
+          }
+        }
+      }
+    },
+
+    "Provenance": {
+      "type": "object",
+      "required": ["api_version", "created_at"],
+      "properties": {
+        "api_version": {"const": "1.0"},
+        "created_at": {"type": "string", "format": "date-time"},
+        "code_revision": {"type": ["string", "null"]},
+        "retention": {"type": "string", "description": "How long the backend keeps the submitted sequence and this result."}
+      }
+    },
+
+    "Warning": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "properties": {
+        "code": {
+          "enum": [
+            "sequence_normalised",
+            "non_standard_residues",
+            "exceeds_encoder_window",
+            "short_sequence",
+            "label_unresolved",
+            "structure_unavailable",
+            "similarity_unavailable"
+          ]
+        },
+        "message": {"type": "string"},
+        "details": {"type": "object"}
+      }
+    },
+
+    "Error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["code", "message"],
+      "description": "Every failure says which of the two sides must change, in words a user can act on. WP4's objectives require clear errors rather than a bare status code.",
+      "properties": {
+        "code": {
+          "enum": [
+            "invalid_request",
+            "invalid_sequence",
+            "sequence_too_long",
+            "multiple_records",
+            "not_found",
+            "method_not_allowed",
+            "payload_too_large",
+            "model_unavailable",
+            "internal_error"
+          ]
+        },
+        "message": {"type": "string"},
+        "details": {"type": "object"}
+      }
+    },
+
+    "ErrorResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["error"],
+      "properties": {"error": {"$ref": "#/$defs/Error"}}
+    },
+
+    "Health": {
+      "type": "object",
+      "required": ["status", "api_version"],
+      "properties": {
+        "status": {"enum": ["ok", "degraded"]},
+        "api_version": {"const": "1.0"},
+        "model": {"$ref": "#/$defs/ModelInfo"},
+        "jobs": {
+          "type": "object",
+          "properties": {
+            "queued": {"type": "integer"},
+            "running": {"type": "integer"},
+            "completed": {"type": "integer"}
+          }
+        }
+      }
+    }
+  }
+}

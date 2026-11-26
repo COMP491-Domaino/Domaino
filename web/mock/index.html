@@ -1,0 +1,692 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domaino</title>
+<style>
+/* Layout: a single column that holds one job at a time -- submit, wait, read.
+   No navigation, because the interface has exactly one task.
+   Tokens are declared once on :root and redefined for dark; nothing below
+   uses a literal colour. */
+:root {
+  --paper: #f6f4ef;
+  --card: #fffefb;
+  --ink: #1b1d1a;
+  --ink-soft: #5d615a;
+  --ink-faint: #8d918a;
+  --rule: #ddd9cf;
+  --accent: #0f6f6a;
+  --accent-soft: #d8ebe9;
+  --warn-bg: #fdf3d8;
+  --warn-ink: #6b5213;
+  --warn-rule: #e5cd87;
+  --bad-bg: #fcebe7;
+  --bad-ink: #8c2d15;
+  --bad-rule: #e8b5a6;
+  --d1: #1f6f8b; --d2: #a8572a; --d3: #4a6c2f; --d4: #7a4a86; --d5: #96603c;
+  --unassigned: #c9c6bc;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #14161a;
+    --card: #1c1f24;
+    --ink: #e8e9e6;
+    --ink-soft: #a6aba4;
+    --ink-faint: #71766f;
+    --rule: #2e333a;
+    --accent: #4fc2b8;
+    --accent-soft: #15302f;
+    --warn-bg: #2d2611;
+    --warn-ink: #e3c979;
+    --warn-rule: #5c4d1d;
+    --bad-bg: #2f1a14;
+    --bad-ink: #f0a68e;
+    --bad-rule: #5e2f22;
+    --d1: #68b5d4; --d2: #e0956a; --d3: #9ec97a; --d4: #c79ad4; --d5: #d4a983;
+    --unassigned: #40454c;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #14161a;
+  --card: #1c1f24;
+  --ink: #e8e9e6;
+  --ink-soft: #a6aba4;
+  --ink-faint: #71766f;
+  --rule: #2e333a;
+  --accent: #4fc2b8;
+  --accent-soft: #15302f;
+  --warn-bg: #2d2611;
+  --warn-ink: #e3c979;
+  --warn-rule: #5c4d1d;
+  --bad-bg: #2f1a14;
+  --bad-ink: #f0a68e;
+  --bad-rule: #5e2f22;
+  --d1: #68b5d4; --d2: #e0956a; --d3: #9ec97a; --d4: #c79ad4; --d5: #d4a983;
+  --unassigned: #40454c;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font: 15px/1.55 var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+.wrap {
+  max-width: 920px;
+  margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 56px;
+}
+
+header { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 4px; }
+h1 {
+  font-size: 1.45rem; font-weight: 650; letter-spacing: -0.015em;
+  margin: 0; text-wrap: balance;
+}
+.tagline { color: var(--ink-soft); font-size: 0.9rem; }
+.badge {
+  margin-left: auto; font-size: 0.72rem; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--ink-faint);
+  border: 1px solid var(--rule); border-radius: 999px; padding: 2px 9px;
+}
+
+section.panel {
+  background: var(--card); border: 1px solid var(--rule); border-radius: 10px;
+  padding: 18px; margin-top: 20px;
+}
+label.field { display: block; font-weight: 600; font-size: 0.88rem; margin-bottom: 7px; }
+textarea {
+  width: 100%; min-height: 150px; resize: vertical;
+  font: 13px/1.5 var(--mono);
+  color: var(--ink); background: var(--paper);
+  border: 1px solid var(--rule); border-radius: 7px; padding: 10px 11px;
+}
+textarea:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 1px;
+}
+.meter {
+  display: flex; gap: 14px; flex-wrap: wrap;
+  font-size: 0.8rem; color: var(--ink-soft); margin-top: 7px;
+  font-variant-numeric: tabular-nums;
+}
+.meter .bad { color: var(--bad-ink); font-weight: 600; }
+
+.drop {
+  margin-top: 12px; border: 1px dashed var(--rule); border-radius: 7px;
+  padding: 11px 13px; font-size: 0.85rem; color: var(--ink-soft);
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+}
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+
+details.options { margin-top: 14px; }
+details.options summary {
+  cursor: pointer; font-size: 0.85rem; font-weight: 600; color: var(--ink-soft);
+}
+.optgrid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 10px 20px; margin-top: 11px; font-size: 0.87rem;
+}
+.optgrid label { display: flex; align-items: center; gap: 7px; min-width: 0; }
+select { font: inherit; padding: 4px 7px; border-radius: 6px;
+  border: 1px solid var(--rule); background: var(--paper); color: var(--ink); }
+
+.actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+button.go {
+  font: 600 0.95rem var(--font); cursor: pointer;
+  background: var(--accent); color: var(--card);
+  border: 0; border-radius: 7px; padding: 9px 20px;
+}
+button.go[disabled] { opacity: 0.5; cursor: default; }
+button.quiet {
+  font: 500 0.85rem var(--font); cursor: pointer;
+  background: transparent; color: var(--ink-soft);
+  border: 1px solid var(--rule); border-radius: 7px; padding: 7px 13px;
+}
+.privacy { font-size: 0.78rem; color: var(--ink-faint); margin-top: 13px; }
+
+/* stages */
+.stages { display: flex; align-items: center; gap: 0; margin: 2px 0 14px; flex-wrap: wrap; }
+.stage { display: flex; align-items: center; gap: 8px; font-size: 0.78rem; color: var(--ink-faint); }
+.stage .dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  border: 2px solid var(--rule); background: var(--card);
+}
+.stage.done .dot { background: var(--accent); border-color: var(--accent); }
+.stage.now .dot { border-color: var(--accent); animation: pulse 1.2s ease-in-out infinite; }
+.stage.done, .stage.now { color: var(--ink); }
+.stage .bar { width: 26px; height: 2px; background: var(--rule); }
+@keyframes pulse { 50% { transform: scale(1.45); } }
+@media (prefers-reduced-motion: reduce) { .stage.now .dot { animation: none; } }
+
+/* banners */
+.banner {
+  border-radius: 8px; padding: 11px 13px; font-size: 0.87rem;
+  display: flex; gap: 9px; align-items: flex-start; margin-bottom: 14px;
+}
+.banner.mock { background: var(--warn-bg); color: var(--warn-ink); border: 1px solid var(--warn-rule); }
+.banner.error { background: var(--bad-bg); color: var(--bad-ink); border: 1px solid var(--bad-rule); }
+.banner.note { background: var(--accent-soft); color: var(--ink); border: 1px solid var(--rule); }
+.banner strong { font-weight: 650; }
+.banner code { font-family: var(--mono); font-size: 0.92em; }
+
+/* domain map */
+.mapbox { overflow-x: auto; }
+.map { min-width: 480px; }
+.ruler {
+  position: relative; height: 15px; font: 0.68rem/1 var(--mono);
+  color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}
+.ruler span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.ruler span:first-child { transform: none; }
+.ruler span:last-child { transform: translateX(-100%); }
+.track {
+  position: relative; height: 26px; border-radius: 4px;
+  background: var(--unassigned); overflow: hidden; margin-top: 3px;
+}
+.track .seg { position: absolute; top: 0; bottom: 0; }
+.track .seg.joined::after {
+  content: ""; position: absolute; inset: 0;
+  background-image: repeating-linear-gradient(135deg,
+    transparent 0 5px, rgba(255,255,255,0.28) 5px 7px);
+}
+.labels { position: relative; height: 18px; margin-top: 3px; font-size: 0.72rem; }
+.labels span {
+  position: absolute; white-space: nowrap; color: var(--ink-soft);
+  overflow: hidden; text-overflow: ellipsis;
+}
+.ribbon { margin-top: 12px; }
+.ribbon h4 {
+  margin: 0 0 3px; font: 600 0.72rem var(--font);
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint);
+}
+.ribbon .bars { display: flex; align-items: flex-end; gap: 1px; height: 26px; }
+.ribbon .bars i { flex: 1 1 0; min-width: 0; background: var(--accent); border-radius: 1px 1px 0 0; }
+
+/* domain cards */
+.domain { border-top: 1px solid var(--rule); padding: 15px 0; }
+.domain:last-child { padding-bottom: 0; }
+.dhead { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.swatch { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.dtitle { font-weight: 650; }
+.dmeta { color: var(--ink-soft); font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+.dconf { margin-left: auto; font-size: 0.82rem; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+table.cath {
+  width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.86rem;
+}
+table.cath th {
+  text-align: left; font: 600 0.7rem var(--font); letter-spacing: 0.07em;
+  text-transform: uppercase; color: var(--ink-faint); padding: 0 8px 4px 0;
+}
+table.cath td { padding: 3px 8px 3px 0; vertical-align: top; }
+table.cath td.code { font-family: var(--mono); white-space: nowrap; }
+table.cath td.conf { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+table.cath tr.unresolved td { color: var(--ink-faint); font-style: italic; }
+.seqlist { font-family: var(--mono); font-size: 0.82rem; color: var(--ink-soft); }
+
+/* sequence with a highlighted position */
+.seqview {
+  font: 12px/1.7 var(--mono); word-break: break-all;
+  background: var(--paper); border: 1px solid var(--rule);
+  border-radius: 6px; padding: 9px 10px; margin-top: 9px; color: var(--ink-soft);
+}
+.seqview mark {
+  background: var(--bad-ink); color: var(--card); padding: 0 2px; border-radius: 2px;
+}
+
+footer.prov {
+  margin-top: 16px; padding-top: 13px; border-top: 1px solid var(--rule);
+  font-size: 0.78rem; color: var(--ink-faint); line-height: 1.7;
+}
+footer.prov code { font-family: var(--mono); }
+.warnlist { margin: 12px 0 0; padding-left: 18px; font-size: 0.83rem; color: var(--ink-soft); }
+.warnlist li { margin-bottom: 3px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Domaino</h1>
+    <span class="tagline">protein domains and CATH labels, from sequence alone</span>
+    <span class="badge" id="apibadge">checking the API…</span>
+  </header>
+
+  <!-- 1. submit -->
+  <section class="panel" id="submit">
+    <label class="field" for="seq">Protein sequence</label>
+    <textarea id="seq" spellcheck="false"
+      placeholder="Paste an amino-acid sequence, with or without a FASTA header"></textarea>
+    <div class="meter">
+      <span id="count">0 residues</span>
+      <span id="hint">amino-acid letters only &middot; one sequence per prediction</span>
+    </div>
+
+    <div class="drop" id="drop">
+      <span>Drop a FASTA file here, or</span>
+      <input type="file" id="file" accept=".fa,.fasta,.faa,.seq,.txt">
+    </div>
+
+    <details class="options">
+      <summary>Options</summary>
+      <div class="optgrid">
+        <label for="arch">Model
+          <select id="arch">
+            <option value="">server default</option>
+            <option value="pairwise">pairwise</option>
+            <option value="query">set prediction</option>
+          </select>
+        </label>
+        <label><input type="checkbox" id="tracks" checked> per-residue confidence</label>
+        <label><input type="checkbox" id="structure"> predict structure (slower)</label>
+      </div>
+    </details>
+
+    <div class="actions">
+      <button class="go" id="go">Predict domains</button>
+      <button class="quiet" id="sample">Use an example</button>
+    </div>
+    <p class="privacy" id="privacy">Your sequence is sent to the backend for this
+      prediction and is dropped as soon as it finishes.</p>
+  </section>
+
+  <!-- 2. waiting -->
+  <section class="panel" id="waiting" hidden>
+    <div class="stages" id="stages"></div>
+    <div id="stagemsg" class="dmeta">submitting…</div>
+    <div class="actions">
+      <button class="quiet" id="cancel">Cancel</button>
+    </div>
+  </section>
+
+  <!-- 3. error -->
+  <section class="panel" id="failure" hidden>
+    <div class="banner error">
+      <span>&#10005;</span>
+      <div>
+        <strong id="errtitle">That sequence cannot be used</strong>
+        <div id="errmsg"></div>
+      </div>
+    </div>
+    <div class="seqview" id="errseq" hidden></div>
+    <div class="actions"><button class="quiet" id="edit">Edit the sequence</button></div>
+  </section>
+
+  <!-- 4. result -->
+  <section class="panel" id="result" hidden>
+    <div class="banner mock" id="mockbanner" hidden>
+      <span>&#9888;</span>
+      <div><strong>Simulated result.</strong> No trained model is loaded, so these
+        domains and labels are generated to exercise the interface. They are not
+        a prediction.</div>
+    </div>
+
+    <div class="dhead" style="margin-bottom:14px">
+      <span class="dtitle" id="rname">result</span>
+      <span class="dmeta" id="rmeta"></span>
+      <button class="quiet" id="again" style="margin-left:auto">New sequence</button>
+    </div>
+
+    <div class="mapbox">
+      <div class="map">
+        <div class="ruler" id="ruler"></div>
+        <div class="track" id="track"></div>
+        <div class="labels" id="maplabels"></div>
+        <div id="ribbons"></div>
+      </div>
+    </div>
+
+    <div id="domains"></div>
+    <ul class="warnlist" id="warnings"></ul>
+    <footer class="prov" id="prov"></footer>
+  </section>
+
+</div>
+
+<script>
+"use strict";
+/* The interface is a client of the documented API and holds no prediction
+   logic of its own: the mocked predictions come from the backend, so there is
+   exactly one mock in the project and this page cannot drift from it. */
+
+const API = (location.protocol === "file:" ? "http://127.0.0.1:8080" : "") + "/api/v1";
+const POLL_MS = 1200;
+const STAGES = ["validating", "embedding", "segmenting", "classifying", "done"];
+const STAGE_NAMES = {validating: "check", embedding: "embed",
+  segmenting: "segment", classifying: "classify", done: "done"};
+const DOMAIN_COLOURS = ["--d1", "--d2", "--d3", "--d4", "--d5"];
+const LEVEL_NAMES = {C: "Class", A: "Architecture", T: "Topology", H: "Superfamily"};
+
+const EXAMPLE = [
+  ">example | two-domain chain",
+  "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEKAVQVKVKALPDAQFEVVHS",
+  "LAKWKRQTLGQHDFSAGEGLYTHMKALRPDEDRLSPLHSVYVDQWDWERVMGDGERQFSTLKSTVEAIWAGI",
+  "KATEAAVSEEFGLAPFLPDQIHFVHSQELLSRYPDLDAKGRERAIAKDLGAVFLVGIGGKLSDGHRHDVRAP",
+  "DYDDWSTPSELGHAGLNGDILVWNPVLEDAFELSSMGIRVDADTLKHQLALTGDEDRLELEWHQALLRGEMP"
+].join("\n");
+
+const el = (id) => document.getElementById(id);
+let job = null, timer = null, aborted = false;
+
+/* ---------- submit ---------------------------------------------------- */
+
+function residueCount(text) {
+  const body = text.replace(/^>.*$/m, "");
+  return (body.match(/[A-Za-z]/g) || []).length;
+}
+
+function updateMeter() {
+  const text = el("seq").value;
+  const n = residueCount(text);
+  el("count").textContent = n + (n === 1 ? " residue" : " residues");
+  const headers = (text.match(/^>/gm) || []).length;
+  const bad = [...text.replace(/^>.*$/m, "")]
+    .filter((c) => /[A-Za-z]/.test(c) && !/[ACDEFGHIKLMNPQRSTVWYBJOUXZ]/i.test(c));
+  const hint = el("hint");
+  hint.classList.remove("bad");
+  if (headers > 1) {
+    hint.textContent = headers + " FASTA records — submit one sequence at a time";
+    hint.classList.add("bad");
+  } else if (bad.length) {
+    hint.textContent = "not an amino-acid letter: " + [...new Set(bad)].join(" ");
+    hint.classList.add("bad");
+  } else if (n && n < 16) {
+    hint.textContent = "at least 16 residues are needed";
+    hint.classList.add("bad");
+  } else {
+    hint.textContent = "amino-acid letters only · one sequence per prediction";
+  }
+  el("go").disabled = n === 0;
+}
+
+function show(which) {
+  for (const id of ["submit", "waiting", "failure", "result"]) {
+    el(id).hidden = id !== which && !(which === "waiting" && id === "submit" && false);
+  }
+}
+
+async function submit() {
+  const options = {include_tracks: el("tracks").checked,
+                   include_structure: el("structure").checked};
+  if (el("arch").value) options.architecture = el("arch").value;
+
+  aborted = false;
+  renderStages("validating");
+  el("stagemsg").textContent = "submitting…";
+  show("waiting");
+
+  let response, body;
+  try {
+    response = await fetch(API + "/predictions", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({sequence: el("seq").value, options})
+    });
+    body = await response.json();
+  } catch (problem) {
+    unreachable();
+    return;
+  }
+  if (!response.ok) { fail(body.error || {message: "the request was refused"}); return; }
+  job = body;
+  render(job);
+  if (job.status === "queued" || job.status === "running") poll();
+}
+
+function poll() {
+  clearTimeout(timer);
+  timer = setTimeout(async () => {
+    if (aborted || !job) return;
+    try {
+      const response = await fetch(API + "/predictions/" + job.job_id);
+      const body = await response.json();
+      if (!response.ok) { fail(body.error); return; }
+      job = body;
+      render(job);
+      if (job.status === "queued" || job.status === "running") poll();
+    } catch (problem) { unreachable(); }
+  }, POLL_MS);
+}
+
+async function cancel() {
+  aborted = true;
+  clearTimeout(timer);
+  if (job) { try { await fetch(API + "/predictions/" + job.job_id, {method: "DELETE"}); }
+             catch (problem) { /* the job expires on its own */ } }
+  job = null;
+  show("submit");
+}
+
+/* ---------- states ---------------------------------------------------- */
+
+function render(current) {
+  if (current.status === "failed") { fail(current.error); return; }
+  if (current.status === "succeeded") { renderResult(current); return; }
+  renderStages((current.progress || {}).stage || "validating");
+  el("stagemsg").textContent = (current.progress || {}).message || current.status;
+  show("waiting");
+}
+
+function renderStages(stage) {
+  const at = Math.max(0, STAGES.indexOf(stage));
+  el("stages").innerHTML = STAGES.slice(0, 4).map((name, index) => {
+    const state = index < at ? "done" : index === at ? "now" : "";
+    return `<div class="stage ${state}"><span class="dot"></span>` +
+      `<span>${STAGE_NAMES[name]}</span></div>` +
+      (index < 3 ? '<span class="bar"></span>' : "");
+  }).join("");
+}
+
+function fail(error) {
+  error = error || {};
+  el("errtitle").textContent = error.code === "internal_error"
+    ? "The prediction could not be completed"
+    : "That sequence cannot be used";
+  el("errmsg").textContent = error.message || "no reason was given";
+  const positions = (error.details || {}).positions || [];
+  const box = el("errseq");
+  if (positions.length) {
+    const raw = el("seq").value;
+    const spot = positions[0];
+    box.innerHTML = escape(raw.slice(Math.max(0, spot - 40), spot - 1)) +
+      "<mark>" + escape(raw.slice(spot - 1, spot)) + "</mark>" +
+      escape(raw.slice(spot, spot + 40));
+    box.hidden = false;
+  } else {
+    box.hidden = true;
+  }
+  show("failure");
+}
+
+function unreachable() {
+  clearTimeout(timer);
+  el("errtitle").textContent = "The backend is not reachable";
+  el("errmsg").innerHTML = "This page talks to the Domaino API and holds no " +
+    "prediction logic of its own. Start the service and reload:<br>" +
+    '<code style="font-family:var(--mono)">python -m domaino.service --static web/mock</code>';
+  el("errseq").hidden = true;
+  show("failure");
+  el("apibadge").textContent = "API offline";
+}
+
+function escape(text) {
+  return text.replace(/[&<>]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+}
+
+/* ---------- result ---------------------------------------------------- */
+
+function renderResult(current) {
+  const r = current.result;
+  const length = r.sequence_length;
+  const count = r.domains.length;
+
+  el("mockbanner").hidden = r.model.mode !== "mock";
+  el("rname").textContent = r.name || current.name || current.job_id;
+  el("rmeta").textContent = `${length} residues · ` +
+    `${count} ${count === 1 ? "domain" : "domains"}`;
+
+  const pct = (residue) => ((residue - 1) / length) * 100;
+
+  // ruler
+  const marks = [1];
+  const step = length <= 150 ? 25 : length <= 400 ? 50 : length <= 1000 ? 100 : 250;
+  for (let v = step; v < length - step / 2; v += step) marks.push(v);
+  marks.push(length);
+  el("ruler").innerHTML = marks.map((v) =>
+    `<span style="left:${pct(v)}%">${v}</span>`).join("");
+
+  // one bar, every residue coloured: domains plus the `unassigned` intervals
+  // the API returns, so a gap can never be a rendering accident
+  el("track").innerHTML = r.domains.map((domain, index) => {
+    const colour = `var(${DOMAIN_COLOURS[index % DOMAIN_COLOURS.length]})`;
+    return domain.segments.map((s, position) => {
+      const width = ((s.end - s.start + 1) / length) * 100;
+      const joined = domain.segments.length > 1 ? " joined" : "";
+      const title = `domain ${domain.index}: ${s.start}–${s.end}` +
+        (domain.discontinuous ? ` (segment ${position + 1} of ${domain.segments.length})` : "");
+      return `<div class="seg${joined}" style="left:${pct(s.start)}%;` +
+        `width:${width}%;background:${colour}" title="${title}"></div>`;
+    }).join("");
+  }).join("");
+
+  el("maplabels").innerHTML = r.domains.map((domain, index) => {
+    const first = domain.segments[0];
+    const last = domain.segments[domain.segments.length - 1];
+    const left = pct(first.start);
+    const width = ((last.end - first.start + 1) / length) * 100;
+    return `<span style="left:${left}%;width:${width}%">domain ${domain.index}` +
+      (domain.discontinuous ? ` (${domain.segments.length} segments)` : "") + "</span>";
+  }).join("");
+
+  // per-residue tracks, downsampled to the width the page has
+  const ribbons = [];
+  for (const [key, title] of [["in_domain", "in domain"], ["boundary", "boundary"]]) {
+    const values = (r.tracks || {})[key];
+    if (!values) continue;
+    ribbons.push(`<div class="ribbon"><h4>${title}</h4><div class="bars">` +
+      downsample(values, 160).map((v) =>
+        `<i style="height:${Math.max(3, v * 100)}%;opacity:${0.35 + v * 0.65}"></i>`
+      ).join("") + "</div></div>");
+  }
+  el("ribbons").innerHTML = ribbons.join("");
+
+  el("domains").innerHTML = r.domains.map((domain, index) => {
+    const colour = `var(${DOMAIN_COLOURS[index % DOMAIN_COLOURS.length]})`;
+    const ranges = domain.segments.map((s) => `${s.start}–${s.end}`).join(", ");
+    return `<div class="domain">
+      <div class="dhead">
+        <span class="swatch" style="background:${colour}"></span>
+        <span class="dtitle">Domain ${domain.index}</span>
+        <span class="dmeta">residues ${ranges} · ${domain.length} aa${
+          domain.discontinuous ? " · discontinuous" : ""}</span>
+        <span class="dconf">segmentation ${domain.confidence.toFixed(2)}</span>
+      </div>
+      ${cathTable(domain.cath)}
+    </div>`;
+  }).join("") || '<p class="dmeta">No domains were predicted for this sequence.</p>';
+
+  const warnings = (r.warnings || []).filter((w) => !w.message.includes("simulated"));
+  el("warnings").innerHTML = warnings.map((w) =>
+    `<li>${escape(w.message)}</li>`).join("");
+
+  const selection = r.model.selection || {};
+  el("prov").innerHTML = [
+    `Model <code>${r.model.architecture}</code>` +
+      (r.model.mode === "mock" ? " (simulated)" : "") +
+      (r.model.run_id ? ` · run <code>${r.model.run_id}</code>` : "") +
+      (selection.value != null
+        ? ` · ${selection.metric} ${Number(selection.value).toFixed(4)}` : ""),
+    [r.model.encoder, r.model.dataset_version,
+     "API v" + r.provenance.api_version].filter(Boolean).join(" · "),
+    r.provenance.retention
+  ].filter(Boolean).join("<br>");
+
+  show("result");
+}
+
+function cathTable(cath) {
+  if (!cath) return '<p class="dmeta">No CATH label: the classifier is not loaded.</p>';
+  const rows = ["C", "A", "T", "H"].map((level) => {
+    const entry = cath[level] || {status: "unresolved"};
+    if (entry.status === "unresolved") {
+      return `<tr class="unresolved"><td>${LEVEL_NAMES[level]}</td>` +
+        `<td class="code">not assigned</td><td>${escape(entry.reason || "")}</td>` +
+        `<td class="conf"></td></tr>`;
+    }
+    return `<tr><td>${LEVEL_NAMES[level]}</td><td class="code">${entry.code}</td>` +
+      `<td>${escape(entry.name || "")}</td>` +
+      `<td class="conf">${Number(entry.confidence).toFixed(2)}</td></tr>`;
+  }).join("");
+  return `<table class="cath"><thead><tr><th>Level</th><th>Code</th>
+    <th>Name</th><th style="text-align:right">Confidence</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+function downsample(values, width) {
+  if (values.length <= width) return values;
+  const out = [];
+  const size = values.length / width;
+  for (let i = 0; i < width; i++) {
+    const slice = values.slice(Math.floor(i * size), Math.floor((i + 1) * size));
+    out.push(slice.length ? Math.max(...slice) : 0);
+  }
+  return out;
+}
+
+/* ---------- wiring ---------------------------------------------------- */
+
+el("seq").addEventListener("input", updateMeter);
+el("go").addEventListener("click", submit);
+el("cancel").addEventListener("click", cancel);
+el("again").addEventListener("click", () => { job = null; show("submit"); });
+el("edit").addEventListener("click", () => { show("submit"); el("seq").focus(); });
+el("sample").addEventListener("click", () => {
+  el("seq").value = EXAMPLE; updateMeter(); el("seq").focus();
+});
+
+const drop = el("drop");
+for (const event of ["dragenter", "dragover"]) {
+  drop.addEventListener(event, (e) => { e.preventDefault(); drop.classList.add("over"); });
+}
+for (const event of ["dragleave", "drop"]) {
+  drop.addEventListener(event, () => drop.classList.remove("over"));
+}
+drop.addEventListener("drop", (e) => {
+  e.preventDefault();
+  if (e.dataTransfer.files[0]) readFile(e.dataTransfer.files[0]);
+});
+el("file").addEventListener("change", (e) => {
+  if (e.target.files[0]) readFile(e.target.files[0]);
+});
+function readFile(file) {
+  const reader = new FileReader();
+  reader.onload = () => { el("seq").value = String(reader.result); updateMeter(); };
+  reader.readAsText(file);
+}
+
+(async function health() {
+  try {
+    const response = await fetch(API + "/health");
+    const body = await response.json();
+    el("apibadge").textContent = "API v" + body.api_version +
+      " · " + body.model.architecture +
+      (body.model.mode === "mock" ? " (mocked)" : "");
+    el("privacy").textContent = "Your sequence is sent to the backend for this " +
+      "prediction and is dropped as soon as it finishes.";
+  } catch (problem) {
+    el("apibadge").textContent = "API offline";
+  }
+})();
+
+updateMeter();
+</script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+{
+  "component_count": 23021,
+  "counts": {
+    "benchmark_chainsaw": 2333,
+    "excluded_homologous": 40192,
+    "excluded_no_cluster": 85697,
+    "excluded_unusable": 37008,
+    "test": 32874,
+    "train": 262991,
+    "validation": 32874
+  },
+  "digests": {
+    "benchmark_chainsaw": "ec3adfa37eea15c9202d5a6432383bb27c23387fef26a95f3046c85018ee729d",
+    "excluded_homologous": "bc8a4efe8c1cd102a97449088fb3cfe9763ffdd4a811ef83c62f1d1dc570cbbc",
+    "excluded_no_cluster": "52fba3e837e2da22cae3531f06f96bf0960370138994b301146bc74156d3e1b0",
+    "excluded_unusable": "bc876676d2ebf350eb1d3ad45d1dbda9ca16793a95e8f5f21b7f3b1ce4087123",
+    "test": "efe30d0132fbbc0917a3204ef191c791544ab4dab961071b8197b665110f4407",
+    "train": "61e3cb59b3dfa862ea7fa4c8029b0e3807cba34f7e05eeacaab321f3e620e7cb",
+    "validation": "2cefcefd8251c60ee4718c40c5004c960d9cfaf1f7dcbe1e5909fc10170f0fc7"
+  },
+  "excluded_by_benchmark": {
+    "benchmark_chainsaw": 40192
+  },
+  "largest_component": 22429,
+  "leakage": {
+    "clean": true,
+    "clusters_leaking_train_into_eval": 0,
+    "clusters_spanning_partitions": 7424,
+    "clusters_total": 37350,
+    "examples": {}
+  }
+}

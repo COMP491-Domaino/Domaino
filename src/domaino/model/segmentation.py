@@ -41,6 +41,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Sequence, Tuple
 
 from .decode import BOUNDARY, DOMAIN, LINKER, RESIDUE_CLASSES
+from .trunk import TrunkConfig, build_trunk
 
 # Distance buckets for the pair head's relative-position bias. Sequence
 # separation is a strong prior -- nearby residues usually share a domain -- so
@@ -63,6 +64,20 @@ class SegmentationConfig:
     pair_rank: int = 64
     # Cap on sampled pairs per chain during training.
     max_pairs_per_chain: int = 40000
+
+    def trunk_config(self) -> TrunkConfig:
+        """The residue trunk, which the query architecture shares.
+
+        Both candidates read their input through the same trunk, so comparing
+        them in work package 3 compares the heads and nothing else.
+        """
+        return TrunkConfig(
+            input_dim=self.input_dim,
+            hidden_dim=self.hidden_dim,
+            dilations=self.dilations,
+            kernel_size=self.kernel_size,
+            dropout=self.dropout,
+        )
 
     def __post_init__(self) -> None:
         if self.kernel_size % 2 == 0:
@@ -162,32 +177,6 @@ def build_network(config: Optional[SegmentationConfig] = None):
 
     config = config or SegmentationConfig()
 
-    class ResidualBlock(nn.Module):
-        """Dilated convolution with a residual connection and layer norm."""
-
-        def __init__(self, channels: int, dilation: int) -> None:
-            super().__init__()
-            padding = dilation * (config.kernel_size - 1) // 2
-            self.conv = nn.Conv1d(
-                channels,
-                channels,
-                kernel_size=config.kernel_size,
-                padding=padding,
-                dilation=dilation,
-            )
-            self.norm = nn.LayerNorm(channels)
-            self.dropout = nn.Dropout(config.dropout)
-
-            self.activation = nn.GELU()
-
-        def forward(self, x, mask):
-            # Zero the padding before convolving, so a padded tail cannot leak
-            # into a real residue's receptive field.
-            y = x * mask.unsqueeze(-1)
-            y = self.conv(y.transpose(1, 2)).transpose(1, 2)
-            y = self.activation(self.norm(y))
-            return x + self.dropout(y)
-
     class PairHead(nn.Module):
         """Low-rank same-domain scorer with a relative-distance bias."""
 
@@ -244,30 +233,19 @@ def build_network(config: Optional[SegmentationConfig] = None):
         def __init__(self) -> None:
             super().__init__()
             self.config = config
-            self.input_proj = nn.Sequential(
-                nn.LayerNorm(config.input_dim),
-                nn.Linear(config.input_dim, config.hidden_dim),
-                nn.GELU(),
-            )
-            self.blocks = nn.ModuleList(
-                ResidualBlock(config.hidden_dim, d) for d in config.dilations
-            )
+            # Shared with the query architecture, so a comparison between the
+            # two is a comparison of their heads.
+            self.residue_trunk = build_trunk(config.trunk_config())
             self.residue_head = nn.Linear(config.hidden_dim, len(RESIDUE_CLASSES))
             self.pair_head = PairHead(config.hidden_dim, config.pair_rank)
 
         @property
         def receptive_field(self) -> int:
             """How many residues can influence one output position."""
-            span = 1
-            for dilation in config.dilations:
-                span += 2 * dilation * (config.kernel_size - 1) // 2
-            return span
+            return self.residue_trunk.receptive_field
 
         def trunk(self, embeddings, mask):
-            features = self.input_proj(embeddings)
-            for block in self.blocks:
-                features = block(features, mask)
-            return features * mask.unsqueeze(-1)
+            return self.residue_trunk(embeddings, mask)
 
         def forward(self, embeddings, mask=None, pairs=None):
             """Run the network.

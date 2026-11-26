@@ -1,0 +1,270 @@
+{
+  "benchmark": "chainsaw_cath1363",
+  "task": "T3.7",
+  "generated_at": "2026-11-25T19:55:37Z",
+  "dataset_version": "dataset_v1",
+  "encoder": "esm2_t33_650M_UR50D",
+  "code": {
+    "revision": "c6ae05954033c7833aa38a1fee68b7c1e5c1ab1a",
+    "dirty": "yes",
+    "branch": "main"
+  },
+  "coverage": {
+    "chainsaw_test": 1363,
+    "in_dataset": 1355,
+    "scored": 1355,
+    "missing_from_dataset": 8,
+    "missing_embedding": 0,
+    "with_published_result": 1355
+  },
+  "methods": {
+    "Chainsaw v3, re-scored": {
+      "input": "structure",
+      "source": "chainsaw_model_v3_on_cath1363_test.csv",
+      "groups": {
+        "all": {
+          "chains": 1349,
+          "mean_iou": 0.8531,
+          "domains_true": 2193,
+          "domains_predicted": 2374,
+          "correctly_parsed": 1653,
+          "pct_correct_at_080": 0.7538,
+          "domain_count_mae": 0.1342,
+          "domain_count_exact": 0.8858,
+          "mean_boundary_error": 4.699,
+          "pct_correct_at_080_per_chain": 0.7648,
+          "chains_with_no_prediction": 0
+        },
+        "single_domain": {
+          "chains": 731,
+          "mean_iou": 0.8715,
+          "domains_true": 731,
+          "domains_predicted": 857,
+          "correctly_parsed": 556,
+          "pct_correct_at_080": 0.7606,
+          "domain_count_mae": 0.1724,
+          "domain_count_exact": 0.8536,
+          "mean_boundary_error": 2.797,
+          "pct_correct_at_080_per_chain": 0.7606,
+          "chains_with_no_prediction": 0
+        },
+        "multidomain": {
+          "chains": 618,
+          "mean_iou": 0.8314,
+          "domains_true": 1462,
+          "domains_predicted": 1517,
+          "correctly_parsed": 1097,
+          "pct_correct_at_080": 0.7503,
+          "domain_count_mae": 0.089,
+          "domain_count_exact": 0.9239,
+          "mean_boundary_error": 6.948,
+          "pct_correct_at_080_per_chain": 0.7698,
+          "chains_with_no_prediction": 0
+        },
+        "continuous": {
+          "chains": 1131,
+          "mean_iou": 0.8696,
+          "domains_true": 1644,
+          "domains_predicted": 1766,
+          "correctly_parsed": 1304,
+          "pct_correct_at_080": 0.7932,
+          "domain_count_mae": 0.1079,
+          "domain_count_exact": 0.9001,
+          "mean_boundary_error": 4.256,
+          "pct_correct_at_080_per_chain": 0.7922,
+          "chains_with_no_prediction": 0
+        },
+        "discontinuous": {
+          "chains": 218,
+          "mean_iou": 0.7678,
+          "domains_true": 549,
+          "domains_predicted": 608,
+          "correctly_parsed": 349,
+          "pct_correct_at_080": 0.6357,
+          "domain_count_mae": 0.2706,
+          "domain_count_exact": 0.8119,
+          "mean_boundary_error": 6.992,
+          "pct_correct_at_080_per_chain": 0.6226,
+          "chains_with_no_prediction": 0
+        }
+      }
+    },
+    "Domaino pairwise": {
+      "input": "sequence",
+      "checkpoint": "./data/processed/dataset_v1/checkpoints/t32-pairwise-a65bdee1b5ab-best.pt",
+      "model": {
+        "architecture": "pairwise",
+        "run_id": "t32-pairwise-a65bdee1b5ab",
+        "epoch": 13,
+        "val_mean_iou": 0.8543,
+        "parameters": 2334864
+      },
+      "groups": {
+        "all": {
+          "chains": 1355,
+          "mean_iou": 0.6957,
+          "domains_true": 2387,
+          "domains_predicted": 1841,
+          "correctly_parsed": 986,
+          "pct_correct_at_080": 0.4131,
+          "domain_count_mae": 0.4974,
+          "domain_count_exact": 0.6236,
+          "mean_boundary_error": 25.741,
+          "pct_correct_at_080_per_chain": 0.5758,
+          "chains_with_no_prediction": 0
+        },
+        "single_domain": {
+          "chains": 653,
+          "mean_iou": 0.9369,
+          "domains_true": 653,
+          "domains_predicted": 671,
+          "correctly_parsed": 607,
+          "pct_correct_at_080": 0.9296,
+          "domain_count_mae": 0.0276,
+          "domain_count_exact": 0.974,
+          "mean_boundary_error": 3.655,
+          "pct_correct_at_080_per_chain": 0.9296,
+          "chains_with_no_prediction": 0
+        },
+        "multidomain": {
+          "chains": 702,
+          "mean_iou": 0.4713,
+          "domains_true": 1734,
+          "domains_predicted": 1170,
+          "correctly_parsed": 379,
+          "pct_correct_at_080": 0.2186,
+          "domain_count_mae": 0.9345,
+          "domain_count_exact": 0.2977,
+          "mean_boundary_error": 46.285,
+          "pct_correct_at_080_per_chain": 0.2467,
+          "chains_with_no_prediction": 0
+        },
+        "continuous": {
+          "chains": 1037,
+          "mean_iou": 0.791,
+          "domains_true": 1540,
+          "domains_predicted": 1318,
+          "correctly_parsed": 916,
+          "pct_correct_at_080": 0.5948,
+          "domain_count_mae": 0.2932,
+          "domain_count_exact": 0.7464,
+          "mean_boundary_error": 14.82,
+          "pct_correct_at_080_per_chain": 0.7224,
+          "chains_with_no_prediction": 0
+        },
+        "discontinuous": {
+          "chains": 318,
+          "mean_iou": 0.3848,
+          "domains_true": 847,
+          "domains_predicted": 523,
+          "correctly_parsed": 70,
+          "pct_correct_at_080": 0.0826,
+          "domain_count_mae": 1.1635,
+          "domain_count_exact": 0.2233,
+          "mean_boundary_error": 61.351,
+          "pct_correct_at_080_per_chain": 0.0978,
+          "chains_with_no_prediction": 0
+        }
+      }
+    },
+    "Domaino query": {
+      "input": "sequence",
+      "checkpoint": "./data/processed/dataset_v1/checkpoints/t32-query-9e720348a11a-best.pt",
+      "model": {
+        "architecture": "query",
+        "run_id": "t32-query-9e720348a11a",
+        "epoch": 7,
+        "val_mean_iou": 0.7619,
+        "parameters": 5669634
+      },
+      "groups": {
+        "all": {
+          "chains": 1355,
+          "mean_iou": 0.6037,
+          "domains_true": 2387,
+          "domains_predicted": 1542,
+          "correctly_parsed": 682,
+          "pct_correct_at_080": 0.2857,
+          "domain_count_mae": 0.6723,
+          "domain_count_exact": 0.5203,
+          "mean_boundary_error": 28.362,
+          "pct_correct_at_080_per_chain": 0.4627,
+          "chains_with_no_prediction": 0
+        },
+        "single_domain": {
+          "chains": 653,
+          "mean_iou": 0.923,
+          "domains_true": 653,
+          "domains_predicted": 668,
+          "correctly_parsed": 581,
+          "pct_correct_at_080": 0.8897,
+          "domain_count_mae": 0.023,
+          "domain_count_exact": 0.9801,
+          "mean_boundary_error": 4.914,
+          "pct_correct_at_080_per_chain": 0.8897,
+          "chains_with_no_prediction": 0
+        },
+        "multidomain": {
+          "chains": 702,
+          "mean_iou": 0.3067,
+          "domains_true": 1734,
+          "domains_predicted": 874,
+          "correctly_parsed": 101,
+          "pct_correct_at_080": 0.0582,
+          "domain_count_mae": 1.2764,
+          "domain_count_exact": 0.0926,
+          "mean_boundary_error": 50.172,
+          "pct_correct_at_080_per_chain": 0.0654,
+          "chains_with_no_prediction": 0
+        },
+        "continuous": {
+          "chains": 1037,
+          "mean_iou": 0.6976,
+          "domains_true": 1540,
+          "domains_predicted": 1133,
+          "correctly_parsed": 654,
+          "pct_correct_at_080": 0.4247,
+          "domain_count_mae": 0.4465,
+          "domain_count_exact": 0.6528,
+          "mean_boundary_error": 19.921,
+          "pct_correct_at_080_per_chain": 0.5928,
+          "chains_with_no_prediction": 0
+        },
+        "discontinuous": {
+          "chains": 318,
+          "mean_iou": 0.2975,
+          "domains_true": 847,
+          "domains_predicted": 409,
+          "correctly_parsed": 28,
+          "pct_correct_at_080": 0.0331,
+          "domain_count_mae": 1.4088,
+          "domain_count_exact": 0.0881,
+          "mean_boundary_error": 55.884,
+          "pct_correct_at_080_per_chain": 0.0383,
+          "chains_with_no_prediction": 0
+        }
+      }
+    }
+  },
+  "chainsaw_published": {
+    "iou": 0.8812,
+    "proportion_correct_domains": 0.7877,
+    "boundary_dist_score": 0.7895,
+    "ndo": 0.897,
+    "d_count_acc": 0.7798
+  },
+  "ground_truth_agreement": {
+    "chains": 1349,
+    "same_domain_count": 1167,
+    "same_domain_count_pct": 0.8651,
+    "mean_signed_count_delta": 0.1364,
+    "mean_shape_distance": 0.0121,
+    "note": "shape distance is total-variation between the two ground truths' domain-size distributions, on chains where they agree on the domain count; 0 means identical proportions"
+  },
+  "caveats": [
+    "Chainsaw reads 3D structure (pairwise Ca distances and predicted secondary structure); Domaino reads sequence alone. The gap is the measurement this project exists to make, not a like-for-like contest.",
+    "Chainsaw's published IoU column cannot be reproduced from its own choppings by a residue-level domain IoU, and the metric details are in Supplementary Material we do not have. Both their figure and our recomputation of it are reported.",
+    "The two ground truths index different coordinate spaces (observed structure residues versus SEQRES), so each method is scored against its own; see ground_truth_agreement.",
+    "Domaino's post-processing thresholds are untuned defaults. T3.5 tunes them on validation data, so these numbers are a floor."
+  ]
+}

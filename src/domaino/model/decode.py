@@ -230,6 +230,47 @@ def domain_length(domain: Domain) -> int:
     return sum(end - start + 1 for start, end in domain)
 
 
+def enforce_consistency(
+    domains: Sequence[Domain], length: int, order: Optional[Sequence[int]] = None
+) -> List[Domain]:
+    """Make a set of domains a valid parse: in range, sorted, non-overlapping.
+
+    A residue claimed by two domains cannot be written as a CATH chopping, so
+    one of them has to give it up. `order` lists domain indices in the order
+    they get to claim; without it, the domain that starts earliest wins. Both
+    segmentation architectures end here, so "a valid parse" means one thing.
+    """
+    if order is None:
+        order = sorted(
+            range(len(domains)), key=lambda i: min(s for s, _ in domains[i])
+        )
+
+    claimed = set()
+    cleaned: List[Domain] = []
+    for index in order:
+        intervals: List[Interval] = []
+        for start, end in sorted(domains[index]):
+            start = max(1, start)
+            end = min(length, end)
+            if end < start:
+                continue
+            positions = [p for p in range(start, end + 1) if p not in claimed]
+            if not positions:
+                continue
+            claimed.update(positions)
+            run_start = positions[0]
+            previous = positions[0]
+            for position in positions[1:]:
+                if position != previous + 1:
+                    intervals.append((run_start, previous))
+                    run_start = position
+                previous = position
+            intervals.append((run_start, previous))
+        if intervals:
+            cleaned.append(merge_close_intervals(intervals, 0))
+    return sorted(cleaned, key=lambda d: d[0][0])
+
+
 @dataclass
 class DecodedChain:
     """A decoded assignment plus what the decoder had to do to get there."""
@@ -397,33 +438,5 @@ class DomainDecoder:
     def _enforce_consistency(
         self, domains: List[Domain], length: int
     ) -> List[Domain]:
-        """Make the output a valid parse: in range, sorted, non-overlapping.
-
-        A residue claimed by two domains is not expressible as a CATH chopping,
-        so the earlier domain keeps it. Without this the metrics would score an
-        assignment the format cannot represent.
-        """
-        claimed = set()
-        cleaned: List[Domain] = []
-        for domain in sorted(domains, key=lambda d: min(s for s, _ in d)):
-            intervals: List[Interval] = []
-            for start, end in sorted(domain):
-                start = max(1, start)
-                end = min(length, end)
-                if end < start:
-                    continue
-                positions = [p for p in range(start, end + 1) if p not in claimed]
-                if not positions:
-                    continue
-                claimed.update(positions)
-                run_start = positions[0]
-                previous = positions[0]
-                for position in positions[1:]:
-                    if position != previous + 1:
-                        intervals.append((run_start, previous))
-                        run_start = position
-                    previous = position
-                intervals.append((run_start, previous))
-            if intervals:
-                cleaned.append(merge_close_intervals(intervals, 0))
-        return cleaned
+        """Make the output a valid parse; shared with the query decoder."""
+        return enforce_consistency(domains, length)

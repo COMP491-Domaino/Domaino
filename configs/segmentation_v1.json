@@ -40,5 +40,33 @@
     "min_coverage": 0.5,
     "min_block_length": 5
   },
-  "learning_rate": 0.001
+  "learning_rate": 0.001,
+  "comment_query_network": "Second candidate (DETR/MaskFormer-style set prediction). num_queries is the fixed maximum number of domains the architecture can emit; 20 is the most any chain in dataset_v1 carries (3vkgA), so the limit does not bind on this data. input_dim comes from the encoder.",
+  "query_network": {
+    "hidden_dim": 256,
+    "dilations": [
+      1,
+      2,
+      4,
+      8,
+      16,
+      32
+    ],
+    "kernel_size": 5,
+    "dropout": 0.1,
+    "num_queries": 20,
+    "decoder_layers": 3,
+    "num_heads": 8,
+    "cost_class": 1.0,
+    "cost_mask": 5.0,
+    "cost_dice": 5.0,
+    "no_domain_weight": 0.1
+  },
+  "comment_query_decoder": "The query design needs no clustering: a mask already names a domain's residues, so what remains is thresholding and the same length and gap constraints the pairwise decoder applies.",
+  "query_decoder": {
+    "domain_threshold": 0.5,
+    "mask_threshold": 0.5,
+    "min_domain_length": 40,
+    "max_linker_gap": 20
+  }
 }

@@ -1,0 +1,182 @@
+{
+  "architecture": "pairwise",
+  "code": {
+    "branch": "main",
+    "dirty": "yes",
+    "revision": "c6ae05954033c7833aa38a1fee68b7c1e5c1ab1a"
+  },
+  "config": {
+    "config": {
+      "accumulate_steps": 4,
+      "architecture": "pairwise",
+      "classifier_weight": 1.0,
+      "dropout": 0.1,
+      "epochs": 2,
+      "grad_clip": 1.0,
+      "hidden_dim": 256,
+      "label_min_h_support": 10,
+      "learning_rate": 0.001,
+      "loss_weighting": "balanced",
+      "max_tokens": 24000,
+      "mixed_precision": true,
+      "seed": 20260404,
+      "train_classifier": true,
+      "train_limit": 600,
+      "val_limit": 200,
+      "weight_decay": 0.0001
+    },
+    "dataset_version": "dataset_v1",
+    "encoder": "esm2_t33_650M_UR50D"
+  },
+  "dataset_version": "dataset_v1",
+  "environment": {
+    "cuda": "12.4",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "gpus": "1",
+    "host": "rk02.kuvalar.ku.edu.tr",
+    "python": "3.10.14",
+    "slurm_job": "2100036",
+    "torch": "2.6.0+cu124"
+  },
+  "epochs_run": 2,
+  "finished_at": "2026-11-24T19:19:31Z",
+  "gpu_hours": 0.0018,
+  "history": [
+    {
+      "elapsed_minutes": 0.06,
+      "epoch": 0,
+      "train_loss": 15.97968,
+      "val_h_accuracy": 0.0,
+      "val_h_coverage": 0.0,
+      "val_h_macro_f1": 0.0,
+      "val_mean_iou": 0.8614
+    },
+    {
+      "elapsed_minutes": 0.11,
+      "epoch": 1,
+      "train_loss": 20.33222,
+      "val_h_accuracy": 0.0,
+      "val_h_coverage": 0.0,
+      "val_h_macro_f1": 0.0,
+      "val_mean_iou": 0.8614
+    }
+  ],
+  "name": "T3.2 pairwise (smoke)",
+  "notes": [
+    "working tree was dirty at launch, so the recorded revision does not fully describe the code that ran"
+  ],
+  "results": {
+    "classification_true_segments": {
+      "domains": 238,
+      "h_coverage": 0.0,
+      "levels": {
+        "A": {
+          "accuracy": 0.1891,
+          "classes": 19,
+          "macro_f1": 0.0167,
+          "n": 238,
+          "worst_class_f1": 0.0
+        },
+        "C": {
+          "accuracy": 0.3866,
+          "classes": 5,
+          "macro_f1": 0.1115,
+          "n": 238,
+          "worst_class_f1": 0.0
+        },
+        "H": {
+          "accuracy": 0.0,
+          "classes": 87,
+          "macro_f1": 0.0,
+          "n": 238,
+          "worst_class_f1": 0.0
+        },
+        "T": {
+          "accuracy": 0.0,
+          "classes": 73,
+          "macro_f1": 0.0,
+          "n": 238,
+          "worst_class_f1": 0.0
+        }
+      }
+    },
+    "segmentation": {
+      "all": {
+        "chains": 200,
+        "correctly_parsed": 167,
+        "domain_count_exact": 0.85,
+        "domain_count_mae": 0.19,
+        "domains_predicted": 200,
+        "domains_true": 238,
+        "mean_boundary_error": 12.22,
+        "mean_iou": 0.8614,
+        "pct_correct_at_080": 0.7017
+      },
+      "continuous": {
+        "chains": 197,
+        "correctly_parsed": 167,
+        "domain_count_exact": 0.8629,
+        "domain_count_mae": 0.1777,
+        "domains_predicted": 197,
+        "domains_true": 232,
+        "mean_boundary_error": 11.524,
+        "mean_iou": 0.8698,
+        "pct_correct_at_080": 0.7198
+      },
+      "discontinuous": {
+        "chains": 3,
+        "correctly_parsed": 0,
+        "domain_count_exact": 0.0,
+        "domain_count_mae": 1.0,
+        "domains_predicted": 3,
+        "domains_true": 6,
+        "mean_boundary_error": 57.889,
+        "mean_iou": 0.3136,
+        "pct_correct_at_080": 0.0
+      },
+      "long": {
+        "chains": 10,
+        "correctly_parsed": 0,
+        "domain_count_exact": 0.0,
+        "domain_count_mae": 1.8,
+        "domains_predicted": 10,
+        "domains_true": 28,
+        "mean_boundary_error": 108.85,
+        "mean_iou": 0.1819,
+        "pct_correct_at_080": 0.0
+      },
+      "multidomain": {
+        "chains": 30,
+        "correctly_parsed": 0,
+        "domain_count_exact": 0.0,
+        "domain_count_mae": 1.2667,
+        "domains_predicted": 30,
+        "domains_true": 68,
+        "mean_boundary_error": 71.597,
+        "mean_iou": 0.2431,
+        "pct_correct_at_080": 0.0
+      },
+      "single_domain": {
+        "chains": 170,
+        "correctly_parsed": 167,
+        "domain_count_exact": 1.0,
+        "domain_count_mae": 0.0,
+        "domains_predicted": 170,
+        "domains_true": 170,
+        "mean_boundary_error": 1.741,
+        "mean_iou": 0.9706,
+        "pct_correct_at_080": 0.9824
+      }
+    }
+  },
+  "run_id": "t32-pairwise-d23441da4781",
+  "runtime_seconds": 6.6,
+  "seed": 20260404,
+  "selected": {
+    "checkpoint": "./data/processed/dataset_v1/checkpoints/t32-pairwise-d23441da4781-best.pt",
+    "epoch": 0,
+    "val_mean_iou": 0.8614
+  },
+  "started_at": "2026-11-24T19:19:21Z",
+  "status": "completed"
+}
