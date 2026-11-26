@@ -1,0 +1,186 @@
+{
+  "architecture": "pairwise",
+  "code": {
+    "branch": "main",
+    "dirty": "yes",
+    "revision": "fddca6c953ac74b6d771134e778052d78010e112"
+  },
+  "config": {
+    "config": {
+      "accumulate_steps": 1,
+      "architecture": "pairwise",
+      "assignment_weight": 1.0,
+      "boundary_weight": 0.5,
+      "boundary_width": 2,
+      "classifier_weight": 1.0,
+      "dropout": 0.1,
+      "encoder_learning_rate": 1e-05,
+      "encoder_max_tokens": 4096,
+      "encoder_name": "esm2_t33_650M_UR50D",
+      "epochs": 20,
+      "finetune_encoder": true,
+      "finetune_layers": 0,
+      "grad_clip": 1.0,
+      "gradient_checkpointing": true,
+      "hidden_dim": 256,
+      "label_min_h_support": 10,
+      "learning_rate": 0.001,
+      "loss_weighting": "balanced",
+      "max_tokens": 4096,
+      "mixed_precision": true,
+      "pairs_per_chain": 4000,
+      "pairwise_weight": 1.0,
+      "seed": 20260404,
+      "source_aware": false,
+      "torch_home": "/scratch/esevinc22/new_TED/torch_cache",
+      "train_classifier": true,
+      "train_limit": null,
+      "val_limit": null,
+      "weight_decay": 0.0001
+    },
+    "dataset_version": "dataset_v1",
+    "encoder": "esm2_t33_650M_UR50D"
+  },
+  "dataset_version": "dataset_v1",
+  "environment": {
+    "cuda": "12.4",
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "gpus": "1",
+    "host": "rk02.kuvalar.ku.edu.tr",
+    "python": "3.10.14",
+    "slurm_job": "2106946",
+    "torch": "2.6.0+cu124"
+  },
+  "epochs_run": 1,
+  "finished_at": "",
+  "gpu_hours": 6.1352,
+  "history": [
+    {
+      "elapsed_minutes": 368.08,
+      "epoch": 0,
+      "train_loss": 6.42553,
+      "val_h_accuracy": 0.4858,
+      "val_h_coverage": 0.5563,
+      "val_h_macro_f1": 0.1248,
+      "val_mean_iou": 0.814
+    }
+  ],
+  "name": "T3.2 pairwise",
+  "notes": [
+    "working tree was dirty at launch, so the recorded revision does not fully describe the code that ran"
+  ],
+  "results": {
+    "classification_true_segments": {
+      "domains": 30792,
+      "h_coverage": 0.5563,
+      "levels": {
+        "A": {
+          "accuracy": 0.7941,
+          "classes": 39,
+          "macro_f1": 0.5417,
+          "n": 30792,
+          "worst_class_f1": 0.0
+        },
+        "C": {
+          "accuracy": 0.9231,
+          "classes": 5,
+          "macro_f1": 0.6165,
+          "n": 30792,
+          "worst_class_f1": 0.0878
+        },
+        "H": {
+          "accuracy": 0.4858,
+          "classes": 2236,
+          "macro_f1": 0.1248,
+          "n": 30792,
+          "worst_class_f1": 0.0
+        },
+        "T": {
+          "accuracy": 0.6437,
+          "classes": 789,
+          "macro_f1": 0.23,
+          "n": 30792,
+          "worst_class_f1": 0.0
+        }
+      }
+    },
+    "segmentation": {
+      "all": {
+        "chains": 24525,
+        "correctly_parsed": 20443,
+        "domain_count_exact": 0.7951,
+        "domain_count_mae": 0.2557,
+        "domains_predicted": 29943,
+        "domains_true": 31803,
+        "mean_boundary_error": 16.536,
+        "mean_iou": 0.814,
+        "pct_correct_at_080": 0.6428
+      },
+      "continuous": {
+        "chains": 22033,
+        "correctly_parsed": 18906,
+        "domain_count_exact": 0.836,
+        "domain_count_mae": 0.2054,
+        "domains_predicted": 25984,
+        "domains_true": 26344,
+        "mean_boundary_error": 13.562,
+        "mean_iou": 0.8465,
+        "pct_correct_at_080": 0.7177
+      },
+      "discontinuous": {
+        "chains": 2492,
+        "correctly_parsed": 1537,
+        "domain_count_exact": 0.4338,
+        "domain_count_mae": 0.6998,
+        "domains_predicted": 3959,
+        "domains_true": 5459,
+        "mean_boundary_error": 42.84,
+        "mean_iou": 0.5264,
+        "pct_correct_at_080": 0.2816
+      },
+      "long": {
+        "chains": 2129,
+        "correctly_parsed": 1154,
+        "domain_count_exact": 0.3438,
+        "domain_count_mae": 1.1029,
+        "domains_predicted": 4524,
+        "domains_true": 4036,
+        "mean_boundary_error": 63.552,
+        "mean_iou": 0.5364,
+        "pct_correct_at_080": 0.2859
+      },
+      "multidomain": {
+        "chains": 5823,
+        "correctly_parsed": 3811,
+        "domain_count_exact": 0.3412,
+        "domain_count_mae": 0.7709,
+        "domains_predicted": 9460,
+        "domains_true": 13101,
+        "mean_boundary_error": 39.971,
+        "mean_iou": 0.5029,
+        "pct_correct_at_080": 0.2909
+      },
+      "single_domain": {
+        "chains": 18702,
+        "correctly_parsed": 16632,
+        "domain_count_exact": 0.9364,
+        "domain_count_mae": 0.0952,
+        "domains_predicted": 20483,
+        "domains_true": 18702,
+        "mean_boundary_error": 9.24,
+        "mean_iou": 0.9109,
+        "pct_correct_at_080": 0.8893
+      }
+    }
+  },
+  "run_id": "t32-pairwise-d81bb29ac0f0",
+  "runtime_seconds": 22086.6,
+  "seed": 20260404,
+  "selected": {
+    "checkpoint": "./data/processed/dataset_v1/checkpoints/t32-pairwise-d81bb29ac0f0-best.pt",
+    "epoch": 0,
+    "val_mean_iou": 0.814
+  },
+  "started_at": "2026-11-26T08:00:34Z",
+  "status": "running"
+}

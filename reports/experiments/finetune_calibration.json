@@ -1,0 +1,46 @@
+{
+  "config": "configs/train_v1.json",
+  "sample_chains": 400,
+  "mean_chain_length": 207.0,
+  "train_chains": 196203,
+  "validation_chains": 24525,
+  "frozen_epoch_minutes": 18.5,
+  "results": [
+    {
+      "trainable_layers": 8,
+      "trainable_params": 157422080,
+      "max_tokens": 2048,
+      "residues_per_second": 9453.2,
+      "peak_gpu_gb": 4.95,
+      "projected_epoch_hours": 1.24,
+      "projected_20_epoch_hours": 24.9
+    },
+    {
+      "trainable_layers": 8,
+      "trainable_params": 157422080,
+      "max_tokens": 4096,
+      "residues_per_second": 13590.1,
+      "peak_gpu_gb": 9.4,
+      "projected_epoch_hours": 0.86,
+      "projected_20_epoch_hours": 17.3
+    },
+    {
+      "trainable_layers": 0,
+      "trainable_params": 649358080,
+      "max_tokens": 2048,
+      "residues_per_second": 6020.9,
+      "peak_gpu_gb": 19.82,
+      "projected_epoch_hours": 1.95,
+      "projected_20_epoch_hours": 39.0
+    },
+    {
+      "trainable_layers": 0,
+      "trainable_params": 649358080,
+      "max_tokens": 4096,
+      "residues_per_second": 7216.8,
+      "peak_gpu_gb": 25.45,
+      "projected_epoch_hours": 1.63,
+      "projected_20_epoch_hours": 32.6
+    }
+  ]
+}

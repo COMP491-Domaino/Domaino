@@ -106,27 +106,44 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         )
     config = TrainConfig(**overrides)
 
-    # Caches were built per split by T2.2; a run refuses to start without them
-    # rather than silently embedding on the fly at unpredictable speed.
-    stores = {}
-    for split in ("train", "validation"):
-        path = os.path.join(embeddings_root, f"{model_name}-{split}")
-        if not os.path.exists(os.path.join(path, "index.json")):
-            log(f"missing embedding cache for {split} at {path}")
-            log("build it first: sbatch scripts/embed_split.slurm <split>")
-            return 1
-        store = EmbeddingStore(path)
-        store.verify(model_name)
-        stores[split] = store
-        log(f"{split} cache: {len(store)} chains, dim {store.meta.dim}")
+    # A fine-tuning run encodes from sequence inside the training graph, so
+    # the T2.2 cache is not only unnecessary but unusable: a cached vector
+    # carries no gradient.
+    finetuning = bool(config.finetune_encoder)
+    if finetuning:
+        encoder_block = dict(file_config["encoder"])
+        config.encoder_name = str(encoder_block["model_name"])
+        if encoder_block.get("torch_home"):
+            config.torch_home = str(encoder_block["torch_home"])
+        from ..model.finetune import FinetuneConfig
+
+        feature_dim = FinetuneConfig(model_name=config.encoder_name).embed_dim
+        stores = {}
+        log(f"encoder {config.encoder_name} trains in the graph; cache unused")
+    else:
+        # Caches were built per split by T2.2; a frozen run refuses to start
+        # without them rather than silently embedding on the fly at
+        # unpredictable speed.
+        stores = {}
+        for split in ("train", "validation"):
+            path = os.path.join(embeddings_root, f"{model_name}-{split}")
+            if not os.path.exists(os.path.join(path, "index.json")):
+                log(f"missing embedding cache for {split} at {path}")
+                log("build it first: sbatch scripts/embed_split.slurm <split>")
+                return 1
+            store = EmbeddingStore(path)
+            store.verify(model_name)
+            stores[split] = store
+            log(f"{split} cache: {len(store)} chains, dim {store.meta.dim}")
+        feature_dim = stores["train"].meta.dim
 
     train_examples = load_examples(
         records_path, split_members(manifest_dir, "train"),
-        stores["train"], config.train_limit,
+        stores.get("train"), config.train_limit, with_sequences=finetuning,
     )
     val_examples = load_examples(
         records_path, split_members(manifest_dir, "validation"),
-        stores["validation"], config.val_limit,
+        stores.get("validation"), config.val_limit, with_sequences=finetuning,
     )
     log(f"train {len(train_examples)} chains | validation {len(val_examples)} chains")
     log(
@@ -192,8 +209,12 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     registry.save(record)
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    batcher = EmbeddingBatcher(stores["train"], device=device)
-    val_batcher = EmbeddingBatcher(stores["validation"], device=device)
+    batcher = (
+        EmbeddingBatcher(stores["train"], device=device) if stores else None
+    )
+    val_batcher = (
+        EmbeddingBatcher(stores["validation"], device=device) if stores else None
+    )
 
     record = train(
         config=config,
@@ -205,6 +226,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         record=record,
         registry=registry,
         checkpoint_dir=str(file_config["checkpoint_dir"]),
+        feature_dim=feature_dim,
         log=log,
     )
 

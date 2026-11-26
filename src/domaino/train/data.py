@@ -43,6 +43,10 @@ class ChainExample:
     labels: Dict[str, List[str]] = field(default_factory=dict)
     source: str = "cath"
     supervision: Optional[Supervision] = None
+    # Only loaded when the encoder is being fine-tuned: the frozen path reads
+    # cached embeddings and never needs the residues themselves, and holding
+    # 263,000 sequences it will not use is pure waste.
+    sequence: Optional[str] = None
 
     @property
     def n_domains(self) -> int:
@@ -66,12 +70,15 @@ def load_examples(
     store: Optional[EmbeddingStore] = None,
     limit: Optional[int] = None,
     require_labels: bool = False,
+    with_sequences: bool = False,
 ) -> List[ChainExample]:
     """Load one split's chains, keeping only those that can actually train.
 
     A chain is dropped when it has no cached embedding: training on it would
     mean embedding it on the fly mid-epoch, which would make epoch times
-    unpredictable and the comparison between architectures unfair.
+    unpredictable and the comparison between architectures unfair. A
+    fine-tuning run encodes from sequence and passes no store, so that filter
+    does not apply to it.
     """
     keep = set(members)
     examples: List[ChainExample] = []
@@ -102,6 +109,7 @@ def load_examples(
                 labels,
                 source=record.source,
                 supervision=record.supervision,
+                sequence=record.sequence if with_sequences else None,
             )
         )
         if limit and len(examples) >= limit:

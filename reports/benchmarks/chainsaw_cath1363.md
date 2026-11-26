@@ -1,6 +1,6 @@
 # CHAINSAW CATH1363 benchmark (task T3.7)
 
-Generated 2026-11-25T19:55:37Z
+Generated 2026-11-26T07:31:27Z
 
 Chains: 1355 of Chainsaw's 1363 test chains scored. 8 are absent from `dataset_v1` (their PDB entries were obsoleted after CATH 4.4.0 was built) and 0 had no cached embedding.
 
@@ -9,8 +9,9 @@ Chains: 1355 of Chainsaw's 1363 test chains scored. 8 are absent from `dataset_v
 | Method | Input | mean IoU | correct@0.8 (per chain) | count MAE |
 |---|---|---|---|---|
 | Chainsaw v3, re-scored | structure | 0.8531 | 0.7648 | 0.1342 |
-| Domaino pairwise | sequence | 0.6957 | 0.5758 | 0.4974 |
-| Domaino query | sequence | 0.6037 | 0.4627 | 0.6723 |
+| Domaino pairwise / dataset_v1 | sequence | 0.6957 | 0.5758 | 0.4974 |
+| Domaino pairwise / dataset_v2 | sequence | 0.718 | 0.5934 | 0.414 |
+| Domaino query / dataset_v1 | sequence | 0.6037 | 0.4627 | 0.6723 |
 | Chainsaw v3, as published | structure | 0.8812 | 0.7877 | — |
 
 The last row is Chainsaw's own published column. The row above it is Chainsaw's **same predictions** re-scored with our metric code. The gap between the two is the metric definition, not the model, which is why Domaino is compared against the re-scored row.
@@ -20,8 +21,9 @@ The last row is Chainsaw's own published column. The row above it is Chainsaw's 
 | Method | all | single domain | multidomain | continuous | discontinuous |
 |---|---|---|---|---|---|
 | Chainsaw v3, re-scored | 0.8531 (n=1349) | 0.8715 (n=731) | 0.8314 (n=618) | 0.8696 (n=1131) | 0.7678 (n=218) |
-| Domaino pairwise | 0.6957 (n=1355) | 0.9369 (n=653) | 0.4713 (n=702) | 0.791 (n=1037) | 0.3848 (n=318) |
-| Domaino query | 0.6037 (n=1355) | 0.923 (n=653) | 0.3067 (n=702) | 0.6976 (n=1037) | 0.2975 (n=318) |
+| Domaino pairwise / dataset_v1 | 0.6957 (n=1355) | 0.9369 (n=653) | 0.4713 (n=702) | 0.791 (n=1037) | 0.3848 (n=318) |
+| Domaino pairwise / dataset_v2 | 0.718 (n=1355) | 0.9291 (n=653) | 0.5216 (n=702) | 0.8073 (n=1037) | 0.4268 (n=318) |
+| Domaino query / dataset_v1 | 0.6037 (n=1355) | 0.923 (n=653) | 0.3067 (n=702) | 0.6976 (n=1037) | 0.2975 (n=318) |
 
 ## How comparable are the two ground truths
 

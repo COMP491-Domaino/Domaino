@@ -44,9 +44,9 @@
     "slurm_job": "2105896",
     "torch": "2.6.0+cu124"
   },
-  "epochs_run": 16,
-  "finished_at": "",
-  "gpu_hours": 7.8279,
+  "epochs_run": 17,
+  "finished_at": "2026-11-26T07:30:49Z",
+  "gpu_hours": 8.3211,
   "history": [
     {
       "elapsed_minutes": 28.52,
@@ -191,11 +191,21 @@
       "val_h_coverage": 0.7459,
       "val_h_macro_f1": 0.2389,
       "val_mean_iou": 0.8492
+    },
+    {
+      "elapsed_minutes": 499.26,
+      "epoch": 16,
+      "train_loss": 0.24189,
+      "val_h_accuracy": 0.6529,
+      "val_h_coverage": 0.7595,
+      "val_h_macro_f1": 0.244,
+      "val_mean_iou": 0.8472
     }
   ],
   "name": "T3.2 pairwise",
   "notes": [
-    "working tree was dirty at launch, so the recorded revision does not fully describe the code that ran"
+    "working tree was dirty at launch, so the recorded revision does not fully describe the code that ran",
+    "stopped at epoch 16: run exceeded the 8.0h per-run cap"
   ],
   "results": {
     "classification_true_segments": {
@@ -302,7 +312,7 @@
     }
   },
   "run_id": "t32-pairwise-72266aaa3068",
-  "runtime_seconds": 28180.4,
+  "runtime_seconds": 29955.8,
   "seed": 20260404,
   "selected": {
     "checkpoint": "./data/processed/dataset_v2/checkpoints/t32-pairwise-72266aaa3068-best.pt",
@@ -310,5 +320,5 @@
     "val_mean_iou": 0.8525
   },
   "started_at": "2026-11-25T23:11:31Z",
-  "status": "running"
+  "status": "completed"
 }

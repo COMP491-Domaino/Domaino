@@ -72,6 +72,23 @@ class TrainConfig:
     # registry stay reproducible from their stored config; T3.3's Pfam and TED
     # arms require it, since those sources cannot be used safely without it.
     source_aware: bool = False
+    # ESM-2 fine-tuning. Off by default: every result so far reads the frozen
+    # T2.2 cache, and the proposal plans frozen first. Turning it on puts the
+    # 651M-parameter encoder in the graph, which changes the cost of an epoch
+    # by two orders of magnitude -- see scripts/calibrate_finetune.py.
+    finetune_encoder: bool = False
+    # Transformer layers to train, from the top. 0 means all 33.
+    finetune_layers: int = 0
+    # The encoder gets a smaller step than the freshly initialised heads: at a
+    # shared 1e-3 the pretrained weights are destroyed in the first epoch.
+    encoder_learning_rate: float = 1e-5
+    gradient_checkpointing: bool = True
+    encoder_max_tokens: int = 8192
+    # Which encoder, and where its weights are cached. Only consulted when
+    # fine-tuning; the frozen path takes both from the representation config
+    # that built the cache.
+    encoder_name: str = "esm2_t33_650M_UR50D"
+    torch_home: Optional[str] = None
     # Relative weight of the two residue terms when source_aware is on.
     assignment_weight: float = 1.0
     boundary_weight: float = 0.5
@@ -125,6 +142,22 @@ class CompleteModel:
         self.device = device
         self.architecture = config.architecture
 
+        # The encoder is part of the model only when it is being trained; the
+        # frozen path gets its features from the T2.2 cache instead.
+        self.encoder = None
+        if config.finetune_encoder:
+            from ..model import finetune as ft
+
+            self.encoder = ft.build_trainable_encoder(
+                ft.FinetuneConfig(
+                    model_name=config.encoder_name,
+                    trainable_layers=config.finetune_layers,
+                    gradient_checkpointing=config.gradient_checkpointing,
+                    max_tokens_per_forward=config.encoder_max_tokens,
+                    torch_home=config.torch_home,
+                )
+            ).to(device)
+
         if config.architecture == "pairwise":
             self.seg_config = seg.SegmentationConfig(
                 input_dim=input_dim,
@@ -154,9 +187,34 @@ class CompleteModel:
             )
 
     def parameters(self):
+        yield from self.head_parameters()
+        yield from self.encoder_parameters()
+
+    def head_parameters(self):
         yield from self.segmentation.parameters()
         if self.classifier is not None:
             yield from self.classifier.parameters()
+
+    def encoder_parameters(self):
+        if self.encoder is not None:
+            yield from self.encoder.trainable_parameters()
+
+    def encode(self, batch):
+        """Features for a batch, from the encoder in the graph.
+
+        Returns the same ``(features, mask, lengths)`` triple as
+        `EmbeddingBatcher.build`, so nothing downstream has to know which
+        path produced it.
+        """
+        if self.encoder is None:
+            raise RuntimeError("this model has no encoder in its graph")
+        missing = [e.chain_id for e in batch if not e.sequence]
+        if missing:
+            raise ValueError(
+                "fine-tuning needs residue sequences; load examples with "
+                f"with_sequences=True (missing for {missing[:3]})"
+            )
+        return self.encoder([e.sequence for e in batch], device=self.device)
 
     def parameter_count(self) -> int:
         return sum(p.numel() for p in self.parameters())
@@ -165,11 +223,15 @@ class CompleteModel:
         self.segmentation.train()
         if self.classifier is not None:
             self.classifier.train()
+        if self.encoder is not None:
+            self.encoder.train()
 
     def eval(self) -> None:
         self.segmentation.eval()
         if self.classifier is not None:
             self.classifier.eval()
+        if self.encoder is not None:
+            self.encoder.eval()
 
     def state_dict(self) -> Dict[str, Any]:
         state = {"segmentation": self.segmentation.state_dict()}
@@ -178,6 +240,11 @@ class CompleteModel:
             state["hierarchy"] = self.hierarchy.as_dict()  # type: ignore[union-attr]
         state["seg_config"] = asdict(self.seg_config)
         state["architecture"] = self.architecture
+        if self.encoder is not None:
+            # The fine-tuned weights are the point of such a run, so the
+            # checkpoint carries them even though it triples in size.
+            state["encoder"] = self.encoder.esm.state_dict()
+            state["encoder_name"] = self.config.encoder_name
         return state
 
 
@@ -444,7 +511,10 @@ def evaluate(
         for batch in iter_epoch(
             examples, config.max_tokens, config.seed, shuffle=False
         ):
-            features, mask, _ = batcher.build(batch)
+            features, mask, _ = (
+                model.encode(batch) if model.encoder is not None
+                else batcher.build(batch)
+            )
             out = model.segmentation(features, mask=mask)
             for example, prediction in zip(batch, _decode_batch(model, out, batch)):
                 rows.append((example, prediction))
@@ -519,6 +589,7 @@ def train(
     record: protocol.RunRecord,
     registry: protocol.ExperimentRegistry,
     checkpoint_dir: str,
+    feature_dim: Optional[int] = None,
     log=print,
 ) -> protocol.RunRecord:
     """Train one model, selecting the checkpoint on validation mean IoU."""
@@ -526,18 +597,46 @@ def train(
 
     torch.manual_seed(config.seed)
 
-    device = batcher.device
-    model = CompleteModel(config, batcher.dim, hierarchy, device)
+    # A fine-tuning run has no batcher: its features come from the encoder in
+    # the graph, so the device and feature width are passed in instead.
+    device = batcher.device if batcher is not None else torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
+    if feature_dim is None:
+        if batcher is None:
+            raise ValueError("feature_dim is required without a batcher")
+        feature_dim = batcher.dim
+    model = CompleteModel(config, feature_dim, hierarchy, device)
     log(
         f"{config.architecture}: {model.parameter_count():,} parameters "
         f"(classifier {'on' if model.classifier is not None else 'off'})"
     )
 
-    optimiser = torch.optim.AdamW(
-        list(model.parameters()),
-        lr=config.learning_rate,
-        weight_decay=config.weight_decay,
-    )
+    groups = [
+        {
+            "params": list(model.head_parameters()),
+            "lr": config.learning_rate,
+            "name": "heads",
+        }
+    ]
+    encoder_params = list(model.encoder_parameters())
+    if encoder_params:
+        # A pretrained encoder at the heads' learning rate is destroyed in the
+        # first epoch, so it gets its own group two orders of magnitude lower.
+        groups.append(
+            {
+                "params": encoder_params,
+                "lr": config.encoder_learning_rate,
+                "name": "encoder",
+            }
+        )
+        log(
+            f"encoder: {model.encoder.trainable_count():,} trainable of "
+            f"{sum(p.numel() for p in model.encoder.esm.parameters()):,} "
+            f"parameters, lr {config.encoder_learning_rate}, "
+            f"checkpointing {'on' if config.gradient_checkpointing else 'off'}"
+        )
+    optimiser = torch.optim.AdamW(groups, weight_decay=config.weight_decay)
     use_amp = config.mixed_precision and device is not None and device.type == "cuda"
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
     os.makedirs(checkpoint_dir, exist_ok=True)
@@ -554,7 +653,10 @@ def train(
         for step, batch in enumerate(
             iter_epoch(train_examples, config.max_tokens, config.seed + epoch)
         ):
-            features, mask, _ = batcher.build(batch)
+            features, mask, _ = (
+                model.encode(batch) if model.encoder is not None
+                else batcher.build(batch)
+            )
             with torch.amp.autocast("cuda", enabled=use_amp):
                 seg_loss, out, _ = _segmentation_step(
                     model, features, mask, batch, config

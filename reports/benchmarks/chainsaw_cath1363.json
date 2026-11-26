@@ -1,11 +1,11 @@
 {
   "benchmark": "chainsaw_cath1363",
   "task": "T3.7",
-  "generated_at": "2026-11-25T19:55:37Z",
+  "generated_at": "2026-11-26T07:31:27Z",
   "dataset_version": "dataset_v1",
   "encoder": "esm2_t33_650M_UR50D",
   "code": {
-    "revision": "c6ae05954033c7833aa38a1fee68b7c1e5c1ab1a",
+    "revision": "fddca6c953ac74b6d771134e778052d78010e112",
     "dirty": "yes",
     "branch": "main"
   },
@@ -89,7 +89,7 @@
         }
       }
     },
-    "Domaino pairwise": {
+    "Domaino pairwise / dataset_v1": {
       "input": "sequence",
       "checkpoint": "./data/processed/dataset_v1/checkpoints/t32-pairwise-a65bdee1b5ab-best.pt",
       "model": {
@@ -97,7 +97,8 @@
         "run_id": "t32-pairwise-a65bdee1b5ab",
         "epoch": 13,
         "val_mean_iou": 0.8543,
-        "parameters": 2334864
+        "parameters": 2334864,
+        "dataset_version": "dataset_v1"
       },
       "groups": {
         "all": {
@@ -167,7 +168,86 @@
         }
       }
     },
-    "Domaino query": {
+    "Domaino pairwise / dataset_v2": {
+      "input": "sequence",
+      "checkpoint": "./data/processed/dataset_v2/checkpoints/t32-pairwise-72266aaa3068-best.pt",
+      "model": {
+        "architecture": "pairwise",
+        "run_id": "t32-pairwise-72266aaa3068",
+        "epoch": 14,
+        "val_mean_iou": 0.8525,
+        "parameters": 2334864,
+        "dataset_version": "dataset_v2"
+      },
+      "groups": {
+        "all": {
+          "chains": 1355,
+          "mean_iou": 0.718,
+          "domains_true": 2387,
+          "domains_predicted": 1996,
+          "correctly_parsed": 1071,
+          "pct_correct_at_080": 0.4487,
+          "domain_count_mae": 0.414,
+          "domain_count_exact": 0.6679,
+          "mean_boundary_error": 20.421,
+          "pct_correct_at_080_per_chain": 0.5934,
+          "chains_with_no_prediction": 0
+        },
+        "single_domain": {
+          "chains": 653,
+          "mean_iou": 0.9291,
+          "domains_true": 653,
+          "domains_predicted": 683,
+          "correctly_parsed": 593,
+          "pct_correct_at_080": 0.9081,
+          "domain_count_mae": 0.0459,
+          "domain_count_exact": 0.9556,
+          "mean_boundary_error": 3.98,
+          "pct_correct_at_080_per_chain": 0.9081,
+          "chains_with_no_prediction": 0
+        },
+        "multidomain": {
+          "chains": 702,
+          "mean_iou": 0.5216,
+          "domains_true": 1734,
+          "domains_predicted": 1313,
+          "correctly_parsed": 478,
+          "pct_correct_at_080": 0.2757,
+          "domain_count_mae": 0.7564,
+          "domain_count_exact": 0.4003,
+          "mean_boundary_error": 35.713,
+          "pct_correct_at_080_per_chain": 0.3006,
+          "chains_with_no_prediction": 0
+        },
+        "continuous": {
+          "chains": 1037,
+          "mean_iou": 0.8073,
+          "domains_true": 1540,
+          "domains_predicted": 1382,
+          "correctly_parsed": 979,
+          "pct_correct_at_080": 0.6357,
+          "domain_count_mae": 0.2604,
+          "domain_count_exact": 0.7763,
+          "mean_boundary_error": 13.071,
+          "pct_correct_at_080_per_chain": 0.74,
+          "chains_with_no_prediction": 0
+        },
+        "discontinuous": {
+          "chains": 318,
+          "mean_iou": 0.4268,
+          "domains_true": 847,
+          "domains_predicted": 614,
+          "correctly_parsed": 92,
+          "pct_correct_at_080": 0.1086,
+          "domain_count_mae": 0.9151,
+          "domain_count_exact": 0.3145,
+          "mean_boundary_error": 44.388,
+          "pct_correct_at_080_per_chain": 0.115,
+          "chains_with_no_prediction": 0
+        }
+      }
+    },
+    "Domaino query / dataset_v1": {
       "input": "sequence",
       "checkpoint": "./data/processed/dataset_v1/checkpoints/t32-query-9e720348a11a-best.pt",
       "model": {
@@ -175,7 +255,8 @@
         "run_id": "t32-query-9e720348a11a",
         "epoch": 7,
         "val_mean_iou": 0.7619,
-        "parameters": 5669634
+        "parameters": 5669634,
+        "dataset_version": "dataset_v1"
       },
       "groups": {
         "all": {

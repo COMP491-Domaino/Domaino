@@ -1,0 +1,169 @@
+{
+  "generated_at": "2026-11-26T07:24:57Z",
+  "chains": 2000,
+  "eval_limit": 2000,
+  "model": {
+    "architecture": "pairwise",
+    "run_id": "t32-pairwise-a65bdee1b5ab",
+    "epoch": 13,
+    "selection": 0.8543,
+    "checkpoint": "data/processed/dataset_v1/checkpoints/t32-pairwise-a65bdee1b5ab-best.pt"
+  },
+  "segmentation": {
+    "chains": 2000,
+    "mean_iou": 0.8858,
+    "domains_true": 2566,
+    "domains_predicted": 2409,
+    "correctly_parsed": 1962,
+    "pct_correct_at_080": 0.7646,
+    "domain_count_mae": 0.1315,
+    "domain_count_exact": 0.8875,
+    "mean_boundary_error": 7.656
+  },
+  "groups": {
+    "all": {
+      "chains": 2000,
+      "mean_iou": 0.8858,
+      "domains_true": 2566,
+      "domains_predicted": 2409,
+      "correctly_parsed": 1962,
+      "pct_correct_at_080": 0.7646,
+      "domain_count_mae": 0.1315,
+      "domain_count_exact": 0.8875,
+      "mean_boundary_error": 7.656
+    },
+    "single_domain": {
+      "chains": 1586,
+      "mean_iou": 0.9524,
+      "domains_true": 1586,
+      "domains_predicted": 1606,
+      "correctly_parsed": 1518,
+      "pct_correct_at_080": 0.9571,
+      "domain_count_mae": 0.0126,
+      "domain_count_exact": 0.988,
+      "mean_boundary_error": 3.08
+    },
+    "continuous": {
+      "chains": 1819,
+      "mean_iou": 0.9154,
+      "domains_true": 2106,
+      "domains_predicted": 2037,
+      "correctly_parsed": 1800,
+      "pct_correct_at_080": 0.8547,
+      "domain_count_mae": 0.0797,
+      "domain_count_exact": 0.9318,
+      "mean_boundary_error": 5.574
+    },
+    "multidomain": {
+      "chains": 414,
+      "mean_iou": 0.6306,
+      "domains_true": 980,
+      "domains_predicted": 803,
+      "correctly_parsed": 444,
+      "pct_correct_at_080": 0.4531,
+      "domain_count_mae": 0.587,
+      "domain_count_exact": 0.5024,
+      "mean_boundary_error": 25.185
+    },
+    "discontinuous": {
+      "chains": 181,
+      "mean_iou": 0.5877,
+      "domains_true": 460,
+      "domains_predicted": 372,
+      "correctly_parsed": 162,
+      "pct_correct_at_080": 0.3522,
+      "domain_count_mae": 0.6519,
+      "domain_count_exact": 0.442,
+      "mean_boundary_error": 28.576
+    },
+    "long": {
+      "chains": 115,
+      "mean_iou": 0.5869,
+      "domains_true": 316,
+      "domains_predicted": 275,
+      "correctly_parsed": 96,
+      "pct_correct_at_080": 0.3038,
+      "domain_count_mae": 0.8435,
+      "domain_count_exact": 0.3565,
+      "mean_boundary_error": 37.561
+    }
+  },
+  "classification": {
+    "domains": 2534,
+    "levels": {
+      "C": {
+        "n": 2534,
+        "classes": 5,
+        "accuracy": 0.8895,
+        "macro_f1": 0.6636,
+        "worst_class_f1": 0.025
+      },
+      "A": {
+        "n": 2534,
+        "classes": 31,
+        "accuracy": 0.7735,
+        "macro_f1": 0.7051,
+        "worst_class_f1": 0.0
+      },
+      "T": {
+        "n": 2534,
+        "classes": 318,
+        "accuracy": 0.633,
+        "macro_f1": 0.4545,
+        "worst_class_f1": 0.0
+      },
+      "H": {
+        "n": 2534,
+        "classes": 487,
+        "accuracy": 0.5308,
+        "macro_f1": 0.4106,
+        "worst_class_f1": 0.0
+      }
+    },
+    "h_coverage": 0.6488
+  },
+  "baselines": {
+    "segmentation": {
+      "single_domain": {
+        "label": "Baseline 1: one domain",
+        "mean_iou": 0.7138,
+        "pct_correct_at_080": 0.4745,
+        "domain_count_mae": 0.295,
+        "mean_boundary_error": 33.914
+      },
+      "boundary": {
+        "label": "Baseline 2: boundary predictor",
+        "mean_iou": 0.6373,
+        "pct_correct_at_080": 0.3023,
+        "domain_count_mae": 2.053,
+        "mean_boundary_error": 6.874
+      }
+    },
+    "classification": {
+      "C": {
+        "classes": 5,
+        "accuracy": 0.7859,
+        "macro_f1": 0.4674,
+        "unseen": 0
+      },
+      "A": {
+        "classes": 36,
+        "accuracy": 0.4071,
+        "macro_f1": 0.0713,
+        "unseen": 2
+      },
+      "T": {
+        "classes": 426,
+        "accuracy": 0.1818,
+        "macro_f1": 0.0053,
+        "unseen": 314
+      },
+      "H": {
+        "classes": 883,
+        "accuracy": 0.0502,
+        "macro_f1": 0.0046,
+        "unseen": 850
+      }
+    }
+  }
+}
