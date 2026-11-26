@@ -30,6 +30,7 @@ src/domaino/
 docs/
   api/              the versioned API contract (T4.1)
   wp4/              user flow and wireframes (T4.1)
+web/app/            the demo web tool with the 3-D structure view (T4.3, T4.5)
 web/mock/           the mocked interface (T4.1)
 tests/              unit tests
 ```
@@ -551,15 +552,84 @@ one. Without it the service serves clearly labelled simulated results
 before training finishes; if a checkpoint fails to load, the service says so
 and falls back rather than refusing to start.
 
-The service runs on the standard library. No web framework is installed in
-this cluster's environment and the compute nodes that hold the model and the
-ESM-2 weights have no outbound internet, so a framework dependency would make
-the service unrunnable exactly where it has to run.
+The service runs on the standard library plus `jsonschema`, which validates
+every request and response against the contract
+(`python -m pip install jsonschema` once in the environment). No web framework
+is installed in this cluster's environment and the compute nodes that hold the
+model and the ESM-2 weights have no outbound internet, so a framework
+dependency would make the service unrunnable exactly where it has to run.
 
 A submitted sequence lives in its job and nowhere else, is dropped the moment
 the prediction finishes, and cannot be serialised by `Job.as_json` — asserted
 in `tests/test_service.py`. Results expire after an hour by default, the store
 is bounded, and `DELETE` forgets a job immediately.
+
+### Web tool: demo version (T4.3, T4.5)
+
+> **This is a demo, not the final web tool.** Without a trained checkpoint
+> the domains and CATH labels are **simulated** to exercise the interface
+> (the page says so in a banner), and the 3-D structure is only available for
+> sequences that are in AlphaFold DB. Similar known domains and functional
+> evidence (T4.4), local structure prediction, exports beyond JSON/PDB and
+> deployment (T4.6) are not built yet.
+
+**Run it.** Use the environment from Step 0, plus `jsonschema` once:
+
+```bash
+~/.conda/envs/domaino/bin/python -m pip install jsonschema    # one-time
+
+cd /path/to/Domaino
+PYTHONPATH=src ~/.conda/envs/domaino/bin/python -m domaino.service --static web/app
+```
+
+Then open <http://127.0.0.1:8080/>. On the cluster, forward the port first:
+VS Code offers it automatically, or from your own machine run
+`ssh -L 8080:127.0.0.1:8080 <user>@<login-node>`. Stop the service with
+Ctrl+C. Useful options:
+
+| Option | Effect |
+|---|---|
+| `--port 8081` | another port, if 8080 is taken |
+| `--checkpoint data/processed/dataset_v1/checkpoints/<run-id>-best.pt --encoder-config configs/representation_v1.json` | real predictions from a WP3 model instead of simulated ones (needs `torch` and `fair-esm` in the environment) |
+| `--no-structure-lookup` | never contact UniProt or AlphaFold DB, e.g. on a node without internet |
+
+**Use it.**
+
+1. Paste one amino-acid sequence (plain or FASTA), drop a FASTA file on the
+   box, or pick an example. The examples are real multidomain proteins from
+   UniProt; T4 lysozyme shows what happens when no structure exists.
+2. Keep *Show the 3-D structure* on and press **Predict domains**.
+3. Read the result:
+   * **3-D structure**: every predicted domain has its own colour, the same as
+     on the domain map. Drag to rotate, scroll to zoom, right-drag to move.
+     *Model confidence* recolours it by the structure model's own pLDDT, and
+     *Boundaries* marks where each domain starts and ends.
+   * **Click a domain**, on the structure, the map, the legend or a card: it
+     lights up on the structure and the side panel shows its predicted CATH
+     classification, from class down to homologous superfamily, with the
+     confidence of each level and why a level was left unassigned.
+   * **Domain map**: the chain from residue 1 to the end; an arc joins the
+     pieces of a discontinuous domain, and grey residues belong to no domain.
+     The sequence itself, coloured by domain, is underneath.
+   * **Export JSON** saves the prediction; **Download structure** saves the
+     PDB file that was shown.
+
+**Where the structure comes from.** It is for display only and never an input
+to Domaino. With `options.include_structure` the service looks it up beside
+the prediction, so the domain result never waits for it or depends on it.
+The sequence's CRC64 checksum is matched to UniProt entries (reviewed ones
+first), and the AlphaFold DB model of a matching entry is used only if the
+model's own sequence is identical to the submission, so its residue numbers
+are the submission's and the domain colours line up exactly. Only the
+checksum and a public accession leave the server, never the sequence, and the
+job still drops its sequence when the prediction finishes. Mutants,
+fragments, designed proteins and anything else not in UniProt get no
+structure from this source; local structure prediction for those is the next
+step of T4.5.
+
+`web/app/` is plain HTML, CSS and JavaScript with no build step, served by the
+service; the 3-D viewer is 3Dmol.js from cdnjs, so the browser needs internet
+access. `web/mock/` is the earlier T4.1 interface, kept as that deliverable.
 
 ## How the data is represented
 

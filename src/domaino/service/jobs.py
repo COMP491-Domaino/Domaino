@@ -53,6 +53,10 @@ class Job:
     error: Optional[Dict[str, Any]] = None
     # Never serialised and dropped as soon as the job leaves RUNNING.
     sequence: Optional[str] = None
+    # Optional 3-D structure (T4.5): a summary that travels with the job, and
+    # the model file, which is served only by the structure endpoint.
+    structure: Optional[Dict[str, Any]] = None
+    structure_model: Optional[str] = None
 
     def as_json(self) -> Dict[str, Any]:
         """The `Job` message of the v1 contract."""
@@ -72,6 +76,11 @@ class Job:
             payload["result"] = self.result
         if self.error is not None:
             payload["error"] = self.error
+        if self.structure is not None:
+            payload["structure"] = self.structure
+            payload["links"]["structure"] = (
+                f"/api/v1/predictions/{self.job_id}/structure"
+            )
         return payload
 
 
@@ -170,6 +179,28 @@ class JobStore:
             job.sequence = None
             self._persist(job)
             return job
+
+    # -- optional structure ------------------------------------------------
+
+    def request_structure(self, job_id: str) -> None:
+        with self._lock:
+            self._jobs[job_id].structure = {
+                "status": "pending",
+                "message": "looking for a structure of this sequence",
+            }
+
+    def set_structure(
+        self, job_id: str, summary: Dict[str, Any], model: Optional[str]
+    ) -> None:
+        """Attach a finished lookup, unless the job was deleted meanwhile."""
+        with self._lock:
+            job = self._jobs.get(job_id)
+            if job is None:
+                return
+            job.structure = summary
+            job.structure_model = model
+            if job.status in TERMINAL:
+                self._persist(job)
 
     # -- reporting ---------------------------------------------------------
 

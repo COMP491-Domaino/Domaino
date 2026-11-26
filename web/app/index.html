@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Domaino</title>
+<meta name="description" content="Protein domain boundaries and CATH classification from the amino-acid sequence alone.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&display=swap">
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js"
+        integrity="sha384-zxWwO8usW1MzUHquSL3foT+Cw2ndelPQ5bNzHVYdKGiJ0vqvqQ8Y9XeKLmotffmQ"
+        crossorigin="anonymous" defer></script>
+<script src="structure-view.js" defer></script>
+<script src="app.js" defer></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <a class="wordmark" href="./">Domaino</a>
+    <span class="brand-sub">Protein domains from sequence alone</span>
+  </div>
+  <div class="topbar-right">
+    <span class="status-pill" id="apiStatus"><span class="dot"></span><span id="apiText">connecting…</span></span>
+    <button class="icon-button" id="themeToggle" type="button" aria-label="Switch between light and dark theme">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main class="page">
+
+  <!-- 1. submit -->
+  <section class="card hero" id="submitView">
+    <div class="hero-text">
+      <h1>Find the domains in a protein</h1>
+      <p>Paste an amino-acid sequence. Domaino predicts where each domain begins and ends,
+        including domains split across the chain, and assigns each one a CATH classification.
+        It reads the sequence only; a known 3-D structure, when there is one, is shown for context.</p>
+    </div>
+
+    <div class="input-block" id="dropZone">
+      <div class="input-head">
+        <label for="sequence">Sequence <span class="muted">(plain or FASTA)</span></label>
+        <div class="input-tools">
+          <label class="text-button" for="fileInput">Upload FASTA</label>
+          <input type="file" id="fileInput" accept=".fa,.fasta,.faa,.txt,text/plain" hidden>
+          <button class="text-button" id="clearInput" type="button">Clear</button>
+        </div>
+      </div>
+      <textarea id="sequence" spellcheck="false" autocomplete="off"
+        placeholder=">my protein&#10;MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSG…"></textarea>
+      <div class="input-foot">
+        <span id="residueCount" class="count">0 residues</span>
+        <span id="inputHint" class="hint">Amino-acid letters only, one sequence at a time. You can also drop a file here.</span>
+      </div>
+    </div>
+
+    <div class="examples">
+      <span class="examples-label">Try an example</span>
+      <div class="chips" id="examples"></div>
+    </div>
+
+    <div class="options">
+      <label class="switch">
+        <input type="checkbox" id="optStructure" checked>
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+        <span class="switch-text">
+          <strong>Show the 3-D structure</strong>
+          <span id="structureNote">Finds the AlphaFold DB model of this exact sequence. Only a checksum of the sequence is sent to UniProt, never the sequence itself.</span>
+        </span>
+      </label>
+      <label class="switch">
+        <input type="checkbox" id="optTracks">
+        <span class="switch-track"><span class="switch-thumb"></span></span>
+        <span class="switch-text">
+          <strong>Per-residue probabilities</strong>
+          <span>Adds the in-domain and boundary probability tracks under the domain map.</span>
+        </span>
+      </label>
+      <label class="select">
+        <span>Model</span>
+        <select id="optArchitecture">
+          <option value="">Default (best on validation)</option>
+          <option value="pairwise">Pairwise</option>
+          <option value="query">Query-based</option>
+        </select>
+      </label>
+    </div>
+
+    <div class="submit-row">
+      <button class="primary" id="predictButton" type="button" disabled>
+        Predict domains
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+      <span class="privacy" id="privacyNote">The sequence is used for this prediction only and dropped as soon as it finishes.</span>
+    </div>
+  </section>
+
+  <!-- 2. waiting -->
+  <section class="card waiting" id="waitingView" hidden>
+    <h2>Working on it</h2>
+    <ol class="stepper" id="stepper"></ol>
+    <div class="progress"><span></span></div>
+    <p class="muted" id="stageMessage">submitting…</p>
+    <button class="secondary" id="cancelButton" type="button">Cancel</button>
+  </section>
+
+  <!-- 3. error -->
+  <section class="card failure" id="failureView" hidden>
+    <div class="callout bad">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 16.5v.5"/></svg>
+      <div>
+        <strong id="errorTitle">That sequence cannot be used</strong>
+        <p id="errorMessage"></p>
+        <pre class="error-context" id="errorContext" hidden></pre>
+      </div>
+    </div>
+    <button class="secondary" id="editButton" type="button">Edit the sequence</button>
+  </section>
+
+  <!-- 4. result -->
+  <section id="resultView" hidden>
+    <div class="callout mock" id="mockBanner" hidden>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 16H3z"/><path d="M12 10v4M12 17v.5"/></svg>
+      <div><strong>Simulated result.</strong> No trained model is loaded on this server, so the domains
+        and CATH labels below are generated to exercise the interface. They are not a prediction.
+        The 3-D structure, when shown, is real.</div>
+    </div>
+
+    <div class="result-head">
+      <div>
+        <h2 id="resultName">Result</h2>
+        <div class="meta-chips" id="resultMeta"></div>
+      </div>
+      <div class="result-actions">
+        <button class="secondary small" id="exportJson" type="button">Export JSON</button>
+        <button class="secondary small" id="exportPdb" type="button" hidden>Download structure</button>
+        <button class="primary small" id="newButton" type="button">New sequence</button>
+      </div>
+    </div>
+
+    <div class="stats" id="stats"></div>
+
+    <div class="result-grid">
+      <section class="card structure-card">
+        <div class="card-head">
+          <h3>3-D structure</h3>
+          <div class="toolbar" id="structureToolbar" hidden>
+            <div class="segmented" role="group" aria-label="Colour the structure by">
+              <button type="button" data-mode="domain" class="active">Domains</button>
+              <button type="button" data-mode="plddt">Model confidence</button>
+            </div>
+            <button type="button" class="toggle active" id="toggleLabels" aria-pressed="true">Labels</button>
+            <button type="button" class="toggle" id="toggleBoundaries" aria-pressed="false">Boundaries</button>
+            <button type="button" class="icon-button small" id="resetView" aria-label="Reset the view">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.4-5.7"/><path d="M4 4v4h4"/></svg>
+            </button>
+            <button type="button" class="icon-button small" id="fullscreen" aria-label="Full screen">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="viewer-wrap" id="viewerWrap">
+          <div class="viewer" id="viewer"></div>
+          <div class="viewer-hint" id="viewerHint" hidden>Drag to rotate · scroll to zoom · right-drag to move · click a domain</div>
+          <div class="viewer-readout" id="viewerReadout" hidden></div>
+          <div class="viewer-state" id="viewerState"></div>
+        </div>
+        <div class="legend" id="legend"></div>
+        <div class="source-line" id="structureSource"></div>
+      </section>
+
+      <aside class="card inspector" id="inspector"></aside>
+    </div>
+
+    <section class="card">
+      <div class="card-head">
+        <h3>Domain map</h3>
+        <span class="muted small-text" id="mapCaption"></span>
+      </div>
+      <div class="map" id="domainMap"></div>
+      <div id="tracks"></div>
+      <details class="sequence-details" id="sequenceDetails">
+        <summary>Sequence, coloured by domain</summary>
+        <div class="sequence-view" id="sequenceView"></div>
+      </details>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h3>Domains</h3></div>
+      <div class="domain-grid" id="domainGrid"></div>
+    </section>
+
+    <section class="card notes" id="notesCard" hidden>
+      <div class="card-head"><h3>Notes</h3></div>
+      <ul class="notes-list" id="notes"></ul>
+    </section>
+
+    <footer class="provenance" id="provenance"></footer>
+  </section>
+
+</main>
+</body>
+</html>

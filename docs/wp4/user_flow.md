@@ -218,6 +218,7 @@ also served live at `GET /api/v1/schema`.
 | `GET` | `/api/v1/health` | Liveness, which model is loaded, job counts |
 | `POST` | `/api/v1/predictions` | Submit a sequence → `202` + job |
 | `GET` | `/api/v1/predictions/{job_id}` | Poll; same shape throughout the job's life |
+| `GET` | `/api/v1/predictions/{job_id}/structure` | The optional 3-D structure for display (T4.5), once found |
 | `DELETE` | `/api/v1/predictions/{job_id}` | Forget the job and its sequence |
 | `GET` | `/api/v1/schema` | The contract itself |
 

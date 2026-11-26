@@ -3,8 +3,8 @@
 On the standard library, not a web framework: none is installed in this
 cluster's environment and the compute nodes that hold the model and the ESM-2
 weights have no outbound internet, so a framework dependency would make the
-service unrunnable exactly where it has to run. The routing table below is four
-entries; moving to FastAPI later means re-declaring those four, not rewriting
+service unrunnable exactly where it has to run. The routing table below is five
+entries; moving to FastAPI later means re-declaring those five, not rewriting
 the service.
 
 Every response this module emits is validated against the published schema
@@ -23,6 +23,7 @@ from typing import Any, Callable, Dict, Optional, Tuple
 from .contract import API_VERSION, Contract, ContractError, contract as load_contract
 from .jobs import JobStore
 from .predict import ResolvedOptions, build_predictor
+from .structure import AlphaFoldDB, Fingerprint, lookup_structure, provider_sources
 from .validate import SequenceProblem, validate_request
 
 # Error code to HTTP status. One table, so a new error code cannot be invented
@@ -43,6 +44,10 @@ STATUS_FOR_ERROR = {
 # 100,000 residues, and the rest is JSON overhead and the optional name.
 MAX_BODY_BYTES = 256 * 1024
 
+# Distinguishes "no provider argument" (use AlphaFold DB) from an explicit
+# None, which turns structure lookup off.
+_DEFAULT = object()
+
 
 class Service:
     """The service's behaviour, independent of HTTP.
@@ -60,8 +65,12 @@ class Service:
         synchronous: bool = False,
         validate_responses: bool = True,
         log: Callable[[str], None] = print,
+        structure_provider: Any = _DEFAULT,
     ) -> None:
         self.predictor = predictor or build_predictor(log=log)
+        self.structure_provider = (
+            AlphaFoldDB() if structure_provider is _DEFAULT else structure_provider
+        )
         self.store = store or JobStore()
         self.api = api or load_contract()
         # Synchronous mode runs the prediction inside the POST, which is what
@@ -81,6 +90,7 @@ class Service:
                 ResolvedOptions.from_request(None, self._default_architecture())
             ),
             "jobs": self.store.counts(),
+            "structure_sources": list(provider_sources(self.structure_provider)),
         }
         return 200, self._checked("Health", payload)
 
@@ -105,6 +115,11 @@ class Service:
             )
 
         job = self.store.create(parsed.sequence, name=parsed.name)
+        if options.include_structure:
+            self.store.request_structure(job.job_id)
+            # Only a fingerprint goes to the lookup, so the job can still drop
+            # its sequence as soon as the prediction finishes.
+            self._start_structure(job.job_id, Fingerprint.of(parsed.sequence))
         self._run(job.job_id, parsed, options)
         current = self.store.get(job.job_id)
         assert current is not None
@@ -122,6 +137,29 @@ class Service:
             )
         return 200, self._checked("Job", job.as_json())
 
+    def get_structure(self, job_id: str) -> Tuple[int, Dict[str, Any]]:
+        """The optional 3-D model of a job's sequence, with its provenance."""
+        job = self.store.get(job_id)
+        if job is None:
+            return self._error(
+                {"code": "not_found", "message": f"no job {job_id}; it may have expired"}
+            )
+        if job.structure is None:
+            return self._error(
+                {
+                    "code": "not_found",
+                    "message": f"job {job_id} did not ask for a structure; "
+                    "submit with options.include_structure set to true",
+                }
+            )
+        payload: Dict[str, Any] = {"job_id": job_id, "structure": job.structure}
+        if job.structure_model is not None:
+            payload["model"] = {
+                "format": job.structure.get("format", "pdb"),
+                "data": job.structure_model,
+            }
+        return 200, self._checked("StructureResponse", payload)
+
     def delete_prediction(self, job_id: str) -> Tuple[int, Optional[Dict[str, Any]]]:
         if self.store.delete(job_id):
             return 204, None
@@ -137,6 +175,16 @@ class Service:
 
     def _default_architecture(self) -> str:
         return getattr(self.predictor, "architecture", "pairwise")
+
+    def _start_structure(self, job_id: str, fingerprint: Fingerprint) -> None:
+        def work() -> None:
+            outcome = lookup_structure(self.structure_provider, fingerprint)
+            self.store.set_structure(job_id, outcome.summary, outcome.model)
+
+        if self.synchronous:
+            work()
+            return
+        threading.Thread(target=work, daemon=True).start()
 
     def _run(self, job_id: str, parsed, options: ResolvedOptions) -> None:
         if self.synchronous:
@@ -223,6 +271,13 @@ def route(service: Service, method: str, path: str, body: Any):
                 }
             )
         return service.create_prediction(body)
+    if path.startswith("/api/v1/predictions/") and path.endswith("/structure"):
+        job_id = path[len("/api/v1/predictions/") : -len("/structure")]
+        if method != "GET":
+            return service._error(
+                {"code": "method_not_allowed", "message": f"{method} not allowed here"}
+            )
+        return service.get_structure(job_id)
     if path.startswith("/api/v1/predictions/"):
         job_id = path[len("/api/v1/predictions/") :]
         if method == "GET":

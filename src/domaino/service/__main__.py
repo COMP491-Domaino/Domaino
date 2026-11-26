@@ -2,6 +2,7 @@
 
     python -m domaino.service                        # mocked predictions
     python -m domaino.service --checkpoint path.pt   # a trained T3.2 model
+    python -m domaino.service --no-structure-lookup  # never contact AlphaFold DB
 
 With no checkpoint the service serves clearly labelled simulated results,
 which is what makes the T4.1 interface demonstrable before WP3 finishes.
@@ -44,6 +45,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         "--job-retention-minutes", type=float, default=60.0,
         help="how long a finished result is kept before it is forgotten",
     )
+    parser.add_argument(
+        "--no-structure-lookup", action="store_true",
+        help="do not look up display structures in AlphaFold DB, e.g. on a "
+        "node without internet access",
+    )
     args = parser.parse_args(argv)
 
     encoder_config = None
@@ -67,6 +73,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         predictor=predictor,
         store=JobStore(retention_seconds=args.job_retention_minutes * 60.0),
         log=log,
+        **({"structure_provider": None} if args.no_structure_lookup else {}),
     )
     serve(args.host, args.port, service, static_root=args.static)
     return 0

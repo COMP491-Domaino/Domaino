@@ -42,6 +42,8 @@ def service(**kwargs) -> Service:
     kwargs.setdefault("predictor", MockPredictor())
     kwargs.setdefault("synchronous", True)
     kwargs.setdefault("log", lambda message: None)
+    # Tests never reach the network; structure lookups get a fake provider.
+    kwargs.setdefault("structure_provider", None)
     return Service(**kwargs)
 
 
@@ -337,16 +339,22 @@ class ApiTests(unittest.TestCase):
     def test_a_structure_request_still_returns_the_sequence_result(self):
         # One of WP4's objectives: the core prediction stays available when an
         # optional service does not.
-        _, job = service().create_prediction(
+        class Broken:
+            source = "alphafold_db"
+
+            def lookup(self, fingerprint):
+                raise ConnectionError("no route to the structure source")
+
+        api = service(structure_provider=Broken())
+        _, job = api.create_prediction(
             {"sequence": PROTEIN, "options": {"include_structure": True}}
         )
         self.assertEqual(job["status"], "succeeded")
-        self.assertTrue(
-            any(
-                w["code"] == "structure_unavailable"
-                for w in job["result"]["warnings"]
-            )
-        )
+        self.assertTrue(job["result"]["domains"])
+        status, body = api.get_structure(job["job_id"])
+        self.assertEqual(status, 200)
+        self.assertEqual(body["structure"]["status"], "unavailable")
+        self.assertNotIn("model", body)
 
     def test_tracks_are_returned_only_when_asked_for(self):
         api = service()

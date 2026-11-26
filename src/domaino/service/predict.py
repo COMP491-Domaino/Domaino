@@ -189,10 +189,10 @@ class MockPredictor:
 
     Deterministic so that the interface can be developed against a stable
     result and so a test can assert on it: the same sequence always gives the
-    same domains. The shapes it produces are drawn from the real distribution
-    -- roughly three quarters of CATH chains are single-domain, and
-    discontinuous domains are a minority -- so the frontend is exercised on
-    realistic cases rather than on the easy one.
+    same domains. The layouts follow chain length the way real ones do --
+    short chains are mostly single-domain, long chains mostly hold several
+    domains, sometimes discontinuous ones and unassigned tails -- so the
+    frontend is exercised on realistic cases rather than on the easy one.
     """
 
     mode = "mock"
@@ -244,14 +244,8 @@ class MockPredictor:
             }
         )
         tracks = self._tracks(length, domains) if options.include_tracks else None
-        if options.include_structure:
-            warnings.append(
-                {
-                    "code": "structure_unavailable",
-                    "message": "structure prediction is not part of the mocked "
-                    "backend; the sequence-only result is unaffected",
-                }
-            )
+        # A requested structure is looked up by the service beside this
+        # prediction (see `structure`), so it never touches this result.
         return format_prediction(
             length, domains, cath, confidences,
             model=self.model_info(options), name=name, warnings=warnings,
@@ -259,25 +253,39 @@ class MockPredictor:
         )
 
     def _shape(self, length: int, seed: int) -> List[List[Tuple[int, int]]]:
-        """Plausible domain layout for a chain of this length."""
+        """Plausible domain layout for a chain of this length.
+
+        At most one domain per ~130 residues (six at most), and the chance of
+        a single domain falls with length. About a third of multi-domain
+        layouts make the first domain discontinuous -- it resumes after the
+        others, the layout a boundary-only model cannot express -- and some
+        leave an N-terminal tail outside every domain.
+        """
         if length < 90:
             return [[(1, length)]]
-        roll = seed % 100
-        if roll < 55:
+        most = min(6, 1 + length // 130)
+        single_chance = 60 if length < 200 else 35 if length < 400 else 15
+        if most == 1 or seed % 100 < single_chance:
             return [[(1, length)]]
-        if roll < 70 and length >= 200:
-            # A discontinuous domain wrapping a continuous one, the layout a
-            # boundary-only model cannot express.
-            third = length // 3
-            return [
-                [(1, third), (2 * third + 1, length)],
-                [(third + 1, 2 * third)],
-            ]
-        if roll < 90:
-            cut = max(40, min(length - 40, length // 2 + (seed % 21) - 10))
-            return [[(1, cut)], [(cut + 1, length)]]
-        step = length // 3
-        return [[(1, step)], [(step + 1, 2 * step)], [(2 * step + 1, length)]]
+
+        count = 2 + (seed >> 7) % (most - 1)
+        discontinuous = (seed >> 5) % 3 == 0
+        start = 1 + min(25, length // 20) if (seed >> 4) % 3 == 0 else 1
+        pieces = count + 1 if discontinuous else count
+
+        # Near-equal pieces with a little jitter, each at least 40 residues.
+        span = length - start + 1
+        cuts = [start]
+        for index in range(1, pieces):
+            jitter = ((seed >> (9 + index)) % 21) - 10
+            cut = start + round(index * span / pieces) + jitter
+            cuts.append(max(cuts[-1] + 40, min(cut, length - 40 * (pieces - index) + 1)))
+        cuts.append(length + 1)
+        segments = [(cuts[i], cuts[i + 1] - 1) for i in range(pieces)]
+
+        if discontinuous:
+            return [[segments[0], segments[-1]]] + [[piece] for piece in segments[1:-1]]
+        return [[piece] for piece in segments]
 
     def _label(self, seed: int) -> Dict[str, Any]:
         classes = ["1", "2", "3"]
@@ -486,15 +494,6 @@ class ModelPredictor:
                                 "details": {"domain": index + 1},
                             }
                         )
-
-        if options.include_structure:
-            warnings.append(
-                {
-                    "code": "structure_unavailable",
-                    "message": "structure prediction is not wired up yet "
-                    "(T4.5); the sequence-only result is unaffected",
-                }
-            )
 
         return format_prediction(
             length, domains, cath, confidences,

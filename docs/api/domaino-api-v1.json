@@ -31,6 +31,12 @@
       "responses": {"200": "#/$defs/Job", "404": "#/$defs/ErrorResponse"}
     },
     {
+      "method": "GET",
+      "path": "/api/v1/predictions/{job_id}/structure",
+      "description": "The optional 3-D structure of a job's sequence (T4.5), for display only. Poll while `structure.status` is `pending`; the model file is included once it is `available`. 404 when the job did not ask for a structure.",
+      "responses": {"200": "#/$defs/StructureResponse", "404": "#/$defs/ErrorResponse"}
+    },
+    {
       "method": "DELETE",
       "path": "/api/v1/predictions/{job_id}",
       "description": "Forget a job and the sequence it carried. Part of the privacy commitment in WP4's objectives, and the reason a submitted sequence is never written anywhere else.",
@@ -75,7 +81,7 @@
         "include_structure": {
           "type": "boolean",
           "default": false,
-          "description": "Request optional structure prediction (T4.5). Never blocks the sequence-only result: if it fails, `result` still arrives and a warning explains the absence."
+          "description": "Request an optional 3-D structure for display (T4.5). It is looked up beside the prediction and never blocks or alters the sequence-only result: the job carries a `structure` summary, and the model itself is served by the structure endpoint. If no structure can be found, the summary says why."
         }
       }
     },
@@ -107,9 +113,13 @@
         },
         "result": {"$ref": "#/$defs/Prediction"},
         "error": {"$ref": "#/$defs/Error"},
+        "structure": {"$ref": "#/$defs/StructureSummary"},
         "links": {
           "type": "object",
-          "properties": {"self": {"type": "string"}}
+          "properties": {
+            "self": {"type": "string"},
+            "structure": {"type": "string", "description": "Present when a structure was requested."}
+          }
         }
       }
     },
@@ -240,6 +250,51 @@
       }
     },
 
+    "StructureSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "description": "Where a display structure came from, or why there is none. Residue numbers in the model are positions in the submitted sequence (1-based), so domain segments apply to it directly.",
+      "properties": {
+        "status": {"enum": ["pending", "available", "unavailable"]},
+        "source": {
+          "enum": ["alphafold_db"],
+          "description": "`alphafold_db`: the AlphaFold DB model of a UniProt entry whose sequence is identical to the submission. Only a checksum of the sequence is sent to UniProt to find it."
+        },
+        "message": {"type": "string"},
+        "model_id": {"type": "string", "description": "Identifier of the model at its source, e.g. `AF-P69905-F1`."},
+        "version": {"type": "integer"},
+        "accession": {"type": "string", "description": "UniProt accession of the matching entry."},
+        "description": {"type": "string"},
+        "gene": {"type": "string"},
+        "organism": {"type": "string"},
+        "mean_plddt": {"type": "number", "minimum": 0, "maximum": 100, "description": "Mean per-residue confidence of the structure model (pLDDT), not of Domaino."},
+        "residues": {"type": "integer", "minimum": 1},
+        "entry_url": {"type": "string"},
+        "format": {"enum": ["pdb"]}
+      }
+    },
+
+    "StructureResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["job_id", "structure"],
+      "properties": {
+        "job_id": {"type": "string", "pattern": "^[0-9a-f]{16}$"},
+        "structure": {"$ref": "#/$defs/StructureSummary"},
+        "model": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["format", "data"],
+          "description": "The model file, present once `structure.status` is `available`. Per-residue pLDDT is in the B-factor column.",
+          "properties": {
+            "format": {"enum": ["pdb"]},
+            "data": {"type": "string"}
+          }
+        }
+      }
+    },
+
     "Warning": {
       "type": "object",
       "additionalProperties": false,
@@ -306,6 +361,11 @@
             "running": {"type": "integer"},
             "completed": {"type": "integer"}
           }
+        },
+        "structure_sources": {
+          "type": "array",
+          "items": {"enum": ["alphafold_db"]},
+          "description": "Where this server looks for display structures; empty when structure lookup is turned off."
         }
       }
     }
